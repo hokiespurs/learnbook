@@ -1,0 +1,60 @@
+\section{Variables and Definitions}
+
+\subsection{Calculating Least Squares Parameters}
+When solving the least squares problem, you can also report other information about the solution.  The definition of each of these terms is provided here, and the equation to calculate each term for each least squares method is provided in the summaries.
+
+\subsubsection*{Residuals ($V$)}
+The residuals are easy to compute for ordinary least squares.  It is simply the predicted value minus the observed value.
+
+For Ordinary Least Squares:
+\[
+\text{Residuals} = V = AX - L
+\]
+\subsubsection*{Unit Variance ($S_0^2$)}
+The unit variance is also called "variance of an observation of unit weight" or the "variance of unit weight."  Assuming all of the variances used in the initial weight matrix are correct(accurate stochastic model), the a priori value for the unit variance is 1.  With a correct stochastic model, the computer reference variance of the solution after a least squares adjustment should also be equal to 1.  If it is too high, it indicates that the initial stochastic model was overly optimistic and that the covariance matrix of the observations needed to be scaled up to characterize the observed residuals.  If, the reference variance is too low, the initial stochastic model was too conservative, and the covariance matrix needed to be scaled down to characterize the observed residuals.  In the case where the computed reference variance is too low, the test result is often ignored since correcting it will not change the adjusted coordinates significantly.  This is basically saying you measured your points more accurately than you thought you did.  If the computed reference variance is too high, this indicates that there may either be blunders in the data or you simply you didn't measure your points as accurately as you thought you did.  To test if the computed reference variance is statistically different than the a priori reference variance (1), use the goodness of fit test.
+
+For ordinary least squares is:
+\[
+\text{Reference Variance} = S_0^2 = \dfrac{V'V}{dof}
+\]
+
+\subsubsection*{$\chi^2$ Goodness of Fit Test (is $S_0^2$ statistically equal to 1?)}
+A wo tailed $\chi^2$ Goodness of Fit Test is used to determine if there is an issue with your least squares adjustment at an $\alpha$ significance level.  $\alpha$ values are normally low (eg. 0.01, 0.05).
+
+\begin{align*}
+\text{Null Hypothesis } H_0 &: S_0^2 = 1 \\
+\text{Alternative Hypothesis } H_a &: S_0^2 \neq 1 \\
+\text{Significance } &: \alpha
+\end{align*}
+Test Statistic:
+\[
+\chi^2 = \dfrac{vS_0^2}{\sigma^2} = \dfrac{dof\times S_0^2}{1} = dof\times S_0^2
+\]
+Rejection Region:
+\begin{align*}
+\chi^2 &> \chi_{(\alpha/2,dof)}^2 \\
+\chi^2 &< \chi_{(1-\alpha/2,dof)}^2 \\
+\end{align*}
+If either of the rejection region tests fail at the alpha level, then the null hypothesis is rejected and we can say that the computed reference variance is not equal to the a priori reference variance of 1 at an $\alpha$ significance level.  \textbf{More importantly}, and somewhat counter-intuitively, is that if both rejection region tests pass, we say that the computed reference variance is not significantly different than the a priori reference variance at an $alpha$ significance level, so \textbf{we set the computed reference variance equal to 1!}  What we are saying here is that the computed reference variance is just an estimate, and it should be equal to 1.  Since that estimate is not statistically different than 1 (which would indicate a blunder or poor stochastic model), we assume that there are no blunders and our stochastic model is correct.  If there are no blunders and our stochastic model is correct, the computed reference variance is equal to 1.
+\subsubsection*{Cofactor Matrix ($Q$)}
+The Cofactor Matrix is the inverse of the Normal Matrix.  When the reference variance is equal to 1, it is the same as the covariance matrix.  \todo{need more info here}
+
+\subsubsection*{Covariance Matrix or Unknowns ($\Sigma_x$) }
+The Covariance Matrix (also Variance-Covariance) describes the variance and covariances between the computed unknown parameters.  The variance is the diagonal element, and the off diagonal elements represent how the computed unknown parameters are related.  The standard deviation of the unknowns is just the square root of the variances along the diagonal.  
+
+\subsubsection*{Covariance Matrix of Observations ($\Sigma_l$)}
+The covariance matrix describes the variance and covariance of each of your observation equations.  So for example, if you have observation equations for distances between a few points, and solve for the coordinates of the unknown points.  You can then use this to determine the uncertainty in the distances.  
+
+
+\subsubsection*{Model Skill ($R^2$, sometimes $\hat{S}$)}
+The Skill of the model, or $R^2$, is the amount of variance explained by the model.  A $R^2$ equal to 1 indicates the model perfectly fits the data.  A $R^2$ equal to 0 indicates that the model does not explain any of the variance of the data.  \textbf{Do not use $R^2$ for nonlinear least squares}, as the value is not valid.  
+
+\subsubsection*{Extra Sum of Squares Test (Large N approximation)}
+The model skill will always increase as the number of unknowns increases, so the significant of adding another unknown to a model can be tested with a 'extra sum of squares test.'  This test requires that a large number of N observations.  The equation below shows the hypothesis test that is performed. to compare if the extra parameter added in model B (with $M_2$ parameters) is significant compared to model A(with $M_1$ parameters) at the $\alpha$ confidence level.  If the test is true, the extra parameter is not significant.
+
+\[
+\dfrac{R_B^2 - R_A^2}{1 - R_B^2} \leq \dfrac{1}{N}\chi_{(\alpha,M_2-M_1)}^2
+\]
+
+\subsubsection*{RMSE (Root Mean Square Error)}
+RMSE is another metric to summarize the residuals of the model.  A value of 0 indicates a perfect fit.  Higher values indicate higher residuals and a less accurate model.
