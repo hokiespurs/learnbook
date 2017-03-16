@@ -10,7 +10,7 @@ For Ordinary Least Squares:
 \[
 \text{Residuals} = V = AX - L
 \]
-\subsubsection*{Unit Variance ($S_0^2$)}
+\subsubsection*{Unit Variance ($S_0^2$) ($mse$ in matlab)}
 The unit variance is also called "variance of an observation of unit weight" or the "variance of unit weight."  Assuming all of the variances used in the initial weight matrix are correct(accurate stochastic model), the a priori value for the unit variance is 1.  With a correct stochastic model, the computer reference variance of the solution after a least squares adjustment should also be equal to 1.  If it is too high, it indicates that the initial stochastic model was overly optimistic and that the covariance matrix of the observations needed to be scaled up to characterize the observed residuals.  If, the reference variance is too low, the initial stochastic model was too conservative, and the covariance matrix needed to be scaled down to characterize the observed residuals.  In the case where the computed reference variance is too low, the test result is often ignored since correcting it will not change the adjusted coordinates significantly.  This is basically saying you measured your points more accurately than you thought you did.  If the computed reference variance is too high, this indicates that there may either be blunders in the data or you simply you didn't measure your points as accurately as you thought you did.  To test if the computed reference variance is statistically different than the a priori reference variance (1), use the goodness of fit test.
 
 For ordinary least squares is:
@@ -43,7 +43,7 @@ The Cofactor Matrix is the inverse of the Normal Matrix.  When the reference var
 The Covariance Matrix (also Variance-Covariance) describes the variance and covariances between the computed unknown parameters.  The variance is the diagonal element, and the off diagonal elements represent how the computed unknown parameters are related.  The standard deviation of the unknowns is just the square root of the variances along the diagonal.  
 
 \subsubsection*{Covariance Matrix of Observations ($\Sigma_l$)}
-The covariance matrix describes the variance and covariance of each of your observation equations.  So for example, if you have observation equations for distances between a few points, and solve for the coordinates of the unknown points.  You can then use this to determine the uncertainty in the distances.  
+The covariance matrix describes the variance and covariance of each of your observation equations.  So for example, if you have observation equations for distances between a few points, and solve for the coordinates of the unknown points.  You can then use this to determine the uncertainty in the distances. This is basically using $\Sigma_x$ and GLOPOV.  
 
 
 \subsubsection*{Model Skill ($R^2$, sometimes $\hat{S}$)}

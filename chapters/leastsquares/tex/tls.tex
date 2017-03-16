@@ -1,27 +1,26 @@
-\section{Nonlinear Least Squares}
+\section{Total Least Squares (TLS)}
 \subsection{Theory}
-Nonlinear Least Squares solves a nonlinear, overconstrained system of equations by minimizing the squared residuals of each observation equation.  A Taylor Series expansion is utilized to linearize the equation and iteratively calculate the gradient of the function to determine a local minima.  Optionally, a weight matrix($W$) may be used.  Remove the W term, or replace with an identity matrix if a Weight matrix is not desired.  Covariances may be 0s if not known.
+Total Least Squares solves a nonlinear, overconstrained system of equations by minimizing the squared residuals of each observation.  A Taylor Series expansion is utilized to linearize the equation and iteratively calculate the gradient of the function to determine a local minima.  A Weight Matrix, with a column/row for each observation rather than observation equation, is used to allow for error in all dimensions.  Traditionally, this will be a predicted variance for each observation.
 
 *Note that if the scale of the variance-covariance in the weight matrix is known to be 1, then the computed reference variance should be inspected to ensure it passes the $\chi^2$ goodness of fit test.  If it passes the test, the Covariance matrix should NOT be multiplied by the reference variance.  See definition of reference variance for the reasoning.
 
 \subsection{Assumptions}
 \begin{itemize}
 	\item No Outliers/Blunders. Nonlinear Least Squares is not robust to outliers (consider RANSAC/Robust Weighting if outliers)
-	\item System of equations is nonlinear (eg. derivative wrt at least one unknown is a function of one of the other unknowns)
 	\item System is over-constrained (eg. Number of Observation Equations > Number of Unknowns)
-	\item Error only in dependent variable (eg. mx+b = y + v $\rightarrow$ error only in y dimension)
-	\item $X_0$ must be a reasonable guess, otherwise the solution might settle on an incorrect local minima, rather than the global minimum.	
+	\item Error is in all measurements variable (eg. mx+b = y + v $\rightarrow$ error only in x and y dimension)
+	\item $X_0$ must be a reasonable guess, otherwise the solution might settle on an incorrect local minima, rather than the global minimum.  If a linear problem, one method is to solve the unweighted OLS, then use that to initialize $X_0$ in TLS.
 \end{itemize}
 \subsection{Equations}
 \[
-AX = L + V
+\hspace{5cm} AX=L \hspace{1cm} \text{(note: residuals in both X and L)}
 \]
 \[
-WJ\Delta X=WK+WV 
+BV + J\Delta X = K 
 \]
 \[
 m = \text{number of observations} \hspace{1cm} 
-n = \text{number of unknowns}
+n = \text{number of unknowns} \hspace{1cm}
 \]
 \[
 dof = \text{degrees of freedom (\# of redundant observations)} = m-n
@@ -31,6 +30,45 @@ i = \text{loop iteration}
 \]
 \[
 \text{Observation Equations =  } F_m(x_1,x_2,...,x_n) = l_m \text{ (note: }AX\text{ is obs eqn, L is }[l_1,l_2...,l_m] \text{ )}
+\]
+\setcounter{MaxMatrixCols}{20}
+\[
+B = 
+\begin{bmatrix}
+\ddx{F_1}{v_1} & \ddx{F_1}{v_2} & \dots & \ddx{F_1}{v_n} &
+0 & 0 & 0 & 0 & 
+\dots &
+0 & 0 & 0 & 0 \\
+
+0 & 0 & 0 & 0 & 
+\ddx{F_2}{v_1} & \ddx{F_2}{v_2} & \dots & \ddx{F_2}{v_n} &
+\dots &
+0 & 0 & 0 & 0 \\
+
+\vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots & \vdots & \vdots \\
+
+0 & 0 & 0 & 0 & 
+0 & 0 & 0 & 0 & 
+\dots &
+\ddx{F_m}{v_1} & \ddx{F_m}{v_2} & \dots & \ddx{F_m}{v_n} 
+\end{bmatrix}
+\hspace{0.5cm}
+V = 
+\begin{bmatrix}
+v_{11} \\
+v_{21} \\
+\vdots \\
+v_{n1} \\
+v_{12} \\
+v_{22} \\
+\vdots \\
+v_{n2} \\
+\vdots \\
+v_{1m} \\
+v_{2m} \\
+\vdots \\
+v_{nm}
+\end{bmatrix}
 \]
 \[
 J = \begin{bmatrix}
@@ -49,21 +87,15 @@ K =
 \begin{bmatrix}
 l_1 - F_1(x_1,x_2,...,x_n) \\ l_2 - F_2(x_1,x_2,...,x_n)\\ \vdots \\ l_m - F_m(x_1,x_2,...,x_n)
 \end{bmatrix}
-\hspace{0.5cm}
-V = 
-\begin{bmatrix}
-v_1 \\ v_2 \\ \vdots \\ v_m
-\end{bmatrix}
 \]
 \[
-W = 
+\Sigma = 
 \begin{bmatrix}
-\sigma_{11}^2 & \sigma_{12}^2 & \dots & \sigma_{1m}^2 \\ 
-\sigma_{21}^2 & \sigma_{22}^2 & \dots & \sigma_{2m}^2 \\ 
+\sigma_{11}^2 & \sigma_{12}^2 & \dots & \sigma_{1(n\times m)}^2 \\ 
+\sigma_{21}^2 & \sigma_{22}^2 & \dots & \sigma_{2(n\times m)}^2 \\ 
 \vdots & \vdots & \ddots& \vdots \\
-\sigma_{m1}^2 & \sigma_{m2}^2 & \dots & \sigma_{mm}^2 \\ 
+\sigma_{(n\times m)1}^2 & \sigma_{(n\times m)2}^2 & \dots & \sigma_{(n\times m)(n\times m)}^2 \\ 
 \end{bmatrix}
-^{-1}
 \hspace{1cm}
 \text{Initial Guess } X_0 = 
 \begin{bmatrix}
@@ -74,22 +106,22 @@ x_1 \\ x_2 \\ \vdots \\ x_n
 Loop until $\Delta X $ is small, or more robustly, loop until $S_0^2$ increases.  $S_0^2$ will increase slightly when you get down to really really small numbers and the cpu starts rounding.  Caveat: it will also increase if you have a really bad initial guess, and it starts diverging.
 \vspace{0.15cm}
 \begin{align*}
-\text{Loop Delta Estimate = }\Delta X &= inv(J^TWJ)J^TWK \\
-\text{Loop Estimate = } \hat{X}_i &= X_{i-1}+\Delta X \\
-\text{Residuals} = V &= J\hat{X_i} - K \\
-\text{Reference Variance} = S_0^2 &= \dfrac{V^TWV}{dof}
+	\text{Equivalent Weight = } W_{eq} &= inv(B\Sigma B^T) \\
+	\text{Loop Delta Estimate = }\Delta X &= inv(J^TW_{eq}J)J^TW_{eq}K \\
+	\text{Loop Estimate = } \hat{X}_i &= X_{i-1}+\Delta X \\
+	\text{Equivalent Residuals} = V_{eq} &= J\hat{X_i} - K \\
+	\text{Observation Residuals} = V &= \Sigma B^T W_{eq} V_{eq} \\
+	\text{Reference Variance} = S_0^2 &= \dfrac{V_{eq}^TW_{eq}V_{eq}}{dof}
 \end{align*}
-	
+
 \subsubsection{Final Calculations}
 \begin{align*}
 	\text{Unknowns} &= \hat{X} = \hat{X}_i \text{   (Final Loop Estimate)}\\
-	\text{Cofactor Matrix} &= Q_{xx} = inv(J^TWJ) \\
+	\text{Cofactor Matrix} &= Q_{xx} = inv(J^TW_{eq}J) \\
 	\text{Covariance Matrix of Unkowns} &= \Sigma_{xx} = S_0^2 \times Q_{xx} \\
 	\text{Covariance Matrix of Observations} &= \Sigma_{\hat{l}\hat{l}} = J \Sigma_{xx} J^T \\
 	\text{Standard Deviation of Solved Unknowns} &= \sigma_{\hat{X}} = \sqrt{diag(\Sigma_{xx})} \\
-	\text{Predicted L} &= \hat{L} = AX \\
-	\text{R$^2$ (model skill)} &= \dfrac{var(\hat{L})}{var(L)} \\
-	\text{RMSE } &= \sqrt{\dfrac{VV^T}{m}} \\
+	\text{RMSE } &= \sqrt{\dfrac{V_{eq}V_{eq}^T}{m}} \\
 \end{align*}
 \clearpage
 \subsection{Sample Problem}

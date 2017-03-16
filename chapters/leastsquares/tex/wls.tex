@@ -1,7 +1,77 @@
 \section{Weighted Least Squares (WLS)}
 \subsection{Theory}
+Weighted Least Squares solves a linear, overconstrained system of equations by minimizing the squared residuals of each observation equation, with a weight ($W_i$) applied to each observation.
+\[
+min \sum_{i}^{n} W_i\times v_i^2
+\]
+
+*Note that if the scale of the variance in the weight matrix is known to be 1, then the computed reference variance should be inspected to ensure it passes the $\chi^2$ goodness of fit test.  If it passes the test, the Covariance matrix should NOT be multiplied by the reference variance.  See definition of reference variance for the reasoning.
+
 \subsection{Assumptions}
+\begin{itemize}
+	\item No Outliers/Blunders WLS is not robust to outliers (consider RANSAC/Robust Weighting if outliers)
+	\item System of equations is linear (eg. derivative wrt each unknown is not a function of any of the unknowns)
+	\item System is over-contrained (eg. Number of Observation Equations > Number of Unknowns)
+	\item Error only in dependent variable (eg. mx+b = y + v $\rightarrow$ error only in y dimension)
+	\item No covariance between weight of each observation
+\end{itemize}
 \subsection{Equations}
+\[
+WAX=WL+WV 
+\]
+\[
+m = \text{number of observations} \hspace{1cm} 
+n = \text{number of unknowns}
+\]
+\[
+dof = \text{degrees of freedom (\# of redundant observations)} = m-n
+\]
+\[
+A = \begin{bmatrix}
+a_{11} & a_{12} & \dots & a_{1n} \\
+a_{21} & a_{22} & \dots & a_{1n} \\
+\vdots & \vdots & \vdots& \vdots \\
+a_{m1} & a_{m2} & \dots & a_{mn} \\
+\end{bmatrix}
+\hspace{0.5cm}
+X = 
+\begin{bmatrix}
+x_1 \\ x_2 \\ \vdots \\ x_n
+\end{bmatrix}
+\hspace{0.5cm}
+L = 
+\begin{bmatrix}
+l_1 \\ l_2 \\ \vdots \\ l_m
+\end{bmatrix}
+\hspace{0.5cm}
+V = 
+\begin{bmatrix}
+v_1 \\ v_2 \\ \vdots \\ v_m
+\end{bmatrix}
+\hspace{0.5cm}
+W = diag\left(
+\begin{bmatrix}
+w_1 \\ w_2 \\ \vdots \\ w_m
+\end{bmatrix}
+\text{ or }
+\begin{bmatrix}
+\sigma^2_1 \\ \sigma^2_2 \\ \vdots \\ \sigma^2_m
+\end{bmatrix}^{-1}
+\right)
+\]
+\begin{align*}
+	\text{Unknowns} &= \hat{X} = inv(A^TWA)A^TWL\\
+	\text{Residuals} &= V = AX - L\\
+	\text{Reference Variance} &= S_0^2 = \dfrac{V'WV}{dof} \\
+	\text{Cofactor Matrix} &= Q_{xx} = inv(A^TWA) \\
+	\text{Covariance Matrix of Unkowns} &= \Sigma_{xx} = S_0^2 \times Q_{xx} \\
+	\text{Covariance Matrix of Observations} &= \Sigma_{\hat{l}\hat{l}} = A \Sigma_{xx} A^T \\
+	\text{Standard Deviation of Solved Unknowns} &= \sigma_{\hat{X}} = \sqrt{diag(\Sigma_{xx})} \\
+	\text{Predicted L} &= \hat{L} = AX \\
+	\text{R$^2$ (model skill)} &= \dfrac{var(\hat{L})}{var(L)} \\
+	\text{RMSE } &= \sqrt{\dfrac{VV^T}{m}} \\
+\end{align*}
+\clearpage
 \subsection{Sample Problem}
 \subsection{Example Matlab Code}
 
