@@ -2,7 +2,7 @@
 Least Squares regression solves an over-constrained set of equations as a minimization of the residuals squared($v_i$).  There are a few different least squares regression methods, which will be described in this section.
 
 \[
-min \sum_{i}^{n} v_i^2
+min \sum_{i=1}^{n} v_i^2
 \]
 
 \subsection{Ordinary and Weighted Least Squares}
@@ -161,19 +161,11 @@ A^TAX &= A^TL \\
 X &= inv(A^TA)A^TL
 \end{align*}
 \subsubsection*{Add a Weight Term (Stochastic Model)}
-The weight matrix, W, is used to weight the importance of each observation equation.  This is used when you have higher confidence in certain observations, and want those observations to more significantly influence your result.  While these weights can be related to anything, it is most common that the W matrix is equal to the variance-covariance matrix for all of the observation equations.  Normally each observation is assumed to be statistically independent, which would yield a diagonal matrix (no covariances).  However, in an example using GPS surveying, 3 observation equations (X,Y,Z) with covariances are created for each measurement.  When Covariances are present, this is often referred to as General Least Squares.  Note: Ghilani Textbook does not use this nomenclature.
+The weight matrix, W, is used to weight the importance of each observation equation.  This is used when you have higher confidence in certain observations, and want those observations to more significantly influence your result.  While these weights can be related to anything, it is most common in geomatics that the W matrix is equal to the covariance matrix for all of the observation equations.  Normally each observation is assumed to be statistically independent, which would yield a diagonal matrix with no covariances.  This is often refereed to as Weighted Least Squares(WLS).  However, in an example using GPS surveying, 3 observation equations (X,Y,Z) with covariances are created for each measurement.  When Covariances are present, this is often referred to as General Least Squares(GLS).  The equations to solve the system are exactly the same.  Note: Ghilani Textbook does not use the WLS-GLS nomenclature, as he describes GLS the same way others describe TLS online, so I've chosen to follow the "internet" method for this document.
 
-An example weight matrix for 4 observations equations (a,b,c,d) is shown below.
-\[
-W = \Sigma^{-1} = 
-\begin{bmatrix}
-\sigma_{aa}^2 & \sigma_{ab}^2 & \sigma_{ac}^2 & \sigma_{ad}^2 \\ 
-\sigma_{ab}^2 & \sigma_{bb}^2 & \sigma_{bc}^2 & \sigma_{bd}^2 \\ 
-\sigma_{ac}^2 & \sigma_{bc}^2 & \sigma_{cc}^2 & \sigma_{cd}^2 \\ 
-\sigma_{ad}^2 & \sigma_{bd}^2 & \sigma_{cd}^2 & \sigma_{dd}^2 \\ 
-\end{bmatrix}
-^{-1}
-= 
+An example weight matrix for 4 observations equations (a,b,c,d) is shown below for WLS and GLS.
+\begin{align*}
+\text{Weighted Least Squares(WLS) } W = \Sigma^{-1} &= 
 \begin{bmatrix}
 \sigma_{aa}^2 & 0 & 0 & 0 \\ 
 0 & \sigma_{bb}^2 & 0 & 0 \\
@@ -188,9 +180,17 @@ W = \Sigma^{-1} =
 0 & 0 & \dfrac{1}{\sigma_{cc}^2} & 0 \\
 0 & 0 & 0 & \dfrac{1}{\sigma_{dd}^2} \\
 \end{bmatrix}
-\]
-
-\subsubsection*{Derive Weighted Linear Least Squares}
+\\
+\text{General Least Squares(WLS) } W = \Sigma^{-1} &= 
+\begin{bmatrix}
+\sigma_{aa}^2 & \sigma_{ab}^2 & \sigma_{ac}^2 & \sigma_{ad}^2 \\ 
+\sigma_{ab}^2 & \sigma_{bb}^2 & \sigma_{bc}^2 & \sigma_{bd}^2 \\ 
+\sigma_{ac}^2 & \sigma_{bc}^2 & \sigma_{cc}^2 & \sigma_{cd}^2 \\ 
+\sigma_{ad}^2 & \sigma_{bd}^2 & \sigma_{cd}^2 & \sigma_{dd}^2 \\ 
+\end{bmatrix}
+^{-1}
+\end{align*}
+\subsubsection*{Weighted Linear Least Squares and General Least Squares Equation}
 Incorporating the Weight matrix results in the following, where $A^TWA$ is the Normal Matrix.
 \begin{align*}
 WAX &= WL + WV \\
@@ -201,29 +201,31 @@ X &= inv(A^TWA)A^TWL
 \subsection{Nonlinear Least Squares}
 Each of the previous examples only considered linear observation equations, so the values in the A matrix were constants.  When this is not the case, an iterative nonlinear least squares approach must be used.  Instead of writing the observation equation as $AX=L+V$ as in the linear case, we write the observation equations as $JX=K+V$. Where J is a matrix of partial derivatives of each observation with respect to each unknown.  This method is based on taylor series expansion, and it requires a guess at the initial X ($X_0$).  
 
-The X, in this case, is sometimes written as a $\Delta X$, as it represents how a delta from the initial guess.  The delta is applied to the initial guess, and it is solved again.  This iterative approach is performed until it stabilizes on a solution.  The exit criteria for the loop is normally based on when the reference variance $S_0^2$ increases.  This either means, your solution is diverging to a poor solution, or the deltas have become so small, that they are "bouncing" up and down about the solution.
+The X, in this case, is sometimes written as a $\Delta X$, as it represents a delta from the initial guess.  The delta is applied to the initial guess, and it a new delta is solved... which is then applied.  This iterative approach is performed until it stabilizes on a solution.  The exit criteria for the loop is normally based on when the reference variance $S_0^2$ increases.  This either means, your solution is diverging to a poor solution, or the deltas have become so small, that they are "bouncing" up and down about the solution.  Other exit criteria are a finite number of iterations, or a small absolute value of the delta values for each unknown.  Incorporating a maximum loop iterations is a good idea so that the while loop does not spin off into oblivion.  
 
 \subsubsection*{Weighted Nonlinear Least Squares}
 Incorporating the Weight Matrix results in the following nonlinear least squares solution.
 \begin{align*}
-WJX &= WK \\
-J^TWJX &= J^TWK \\
-X &= inv(J^TWJ)J^TWK
+WJ\Delta X&=WK+WV \\
+J^TWJ\Delta X &= J^TWK \\
+\Delta X &= inv(J^TWJ)J^TWK
 \end{align*}
-\subsection{Ghilani: "General Least Squares" ("I think" Total Least Squares (TLS))}
-It is important to recognize that the weight in all of the previous examples is associated with each observation equation, and not each individual variable.  For example, when solving a coordinate transformation, it is impossible to have error in both the reference and transformed coordinates. Generalized Least Squares is required to allow residuals in each of the variables.
+\subsection{Total Least Squares (TLS)}
+*This section is derived from the "General Least Squares" section of Ghilani... From reading online, I believe this is actually called TLS by most other communities.  
+
+It is important to recognize that the weight in all of the previous examples is associated with each observation equation, and not each individual variable.  For example, when solving a coordinate transformation, it is impossible to have error in both the reference and transformed coordinates. Total Least Squares is required to allow residuals in each of the variables.
 
 Consider the least squares fit of a line with the observation equation to fit a linear line through a set of data points.  Notice that the residual is associated with the y coordinate.
 \[
 mx+b = y + v
 \]
 
-This is what is commonly performed when you do a linear regression with most software packages.  If, however, you want to have error in both the x and y coordinate, you must use general least squares.  The observation equation would then be: 
+This is almost always the methodology performed when you do a linear regression with most software packages.  If, however, you want to have error in both the x and y coordinate, you must use TLS.  The observation equation would then be: 
 \[
 m(x+v_x) + b = (y + v_y)
 \]
 
-A visual plot showing how the fit from General Least Squares is different is shown below:
+A visual plot showing how the fit from TLS is different is shown below:
 \todo{better plot here}
 \begin{figure}[H]
 	\centering
@@ -231,7 +233,7 @@ A visual plot showing how the fit from General Least Squares is different is sho
 \end{figure}
 
 
-\subsubsection*{"I think" Total Least Squares Solution}
+\subsubsection*{Total Least Squares Solution}
 Define your observation equations such that all of the observations and residuals are on the left side of the equation.
 
 \begin{align*}
@@ -343,14 +345,20 @@ W_e = inv(B \Sigma B^T)
 The "Equivalent Weight Matrix System" is:
 
 \begin{align*}
-J^TW_eJX &= J^TW_eK \\
-X &= inv(J^TW_eJ)J^TW_eK 
+J^TW_eJ\Delta X &= J^TW_eK \\
+\Delta X &= inv(J^TW_eJ)J^TW_eK 
 \end{align*}
 
-This is a nonlinear problem which must be solved iteratively.  See the "General Least Squares" Section for all of the generalized equations and a full example problem.
+This is a nonlinear problem which must be solved iteratively.  The solution is just like nonlinear least squares, except the Weight term is now also be calculated each iteration.
+
+To calculate the residual for each observation, user the following equations, where $\hat{X_i}$ is the current loop guess at the unknowns:
+\begin{align*}
+	\text{Equivalent Residuals} = V_{eq} &= J\hat{X_i} - K \\
+	\text{Observation Residuals} = V &= \Sigma B^T W_{eq} V_{eq} \\
+\end{align*}
 
 \section{Robust and Resistant Regression}
-\textbf{Robust least squares} attempts to minimize the weight of outliers.  So instead of minimizing the square of the residuals (L2 Norm Regression aka Least Squares), one example would be to minimize the absolute value of the residuals (L1 Norm Regression or Least Absolute Difference LAD).  This minimizes the impact of outliers, as their residuals are no longer squared.  A more sophisticated example would use "\textbf{Iterative Reweighted Least Squares}", where each point receives a new weight based on an equation for the residuals.
+\textbf{Robust Regression} attempts to minimize the weight of outliers.  So instead of minimizing the square of the residuals (L2 Norm Regression aka Least Squares), one example would be to minimize the absolute value of the residuals (L1 Norm Regression aka Least Absolute Difference LAD).  This minimizes the impact of outliers, as their residuals are no longer squared.  A more sophisticated example would use "\textbf{Iterative Reweighted Least Squares}", where each point receives a new weight based on an equation for the residuals.
 \vspace{0.5cm}
 
 \noindent

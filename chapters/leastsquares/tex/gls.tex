@@ -68,5 +68,129 @@ W =
 	\text{RMSE } &= \sqrt{\dfrac{VV^T}{m}} \\
 \end{align*}
 \clearpage
+
 \subsection{Sample Problem}
+Given the control coordinates $(x_c,y_c)$, corresponding measured coordinates $(x,y)$, and estimated covariance matrix of the control coordinates $\Sigma_c$: 
+\[
+x_c = [1,2,3] \hspace{1cm} y_c = [0, 5, 1]  \hspace{1cm} x = [6,1,8] \hspace{1cm} y = [3,12,8]
+\]
+\[
+\Sigma_c = 
+ \begin{bmatrix}
+\sigma_{x_{c_1}x_{c_1}}^2 & \sigma_{x_{c_1}y_{c_1}}^2 & \sigma_{x_{c_1}x_{c_2}}^2 & \sigma_{x_{c_1}y_{c_2}}^2 & \sigma_{x_{c_1}x_{c_3}}^2 & \sigma_{x_{c_1}y_{c_3}}^2  \\ 
+\sigma_{x_{c_1}y_{c_1}}^2 & \sigma_{y_{c_1}y_{c_1}}^2 & \sigma_{y_{c_1}x_{c_2}}^2 & \sigma_{y_{c_1}y_{c_2}}^2 & \sigma_{y_{c_1}x_{c_3}}^2 & \sigma_{y_{c_1}y_{c_3}}^2  \\ 
+\sigma_{x_{c_1}x_{c_2}}^2 & \sigma_{y_{c_1}x_{c_2}}^2 & \sigma_{x_{c_2}x_{c_2}}^2 & \sigma_{x_{c_2}y_{c_2}}^2 & \sigma_{x_{c_2}x_{c_3}}^2 & \sigma_{x_{c_2}y_{c_3}}^2  \\ 
+\sigma_{x_{c_1}y_{c_2}}^2 & \sigma_{y_{c_1}y_{c_2}}^2 & \sigma_{x_{c_2}y_{c_2}}^2 & \sigma_{y_{c_2}y_{c_2}}^2 & \sigma_{y_{c_2}x_{c_3}}^2 & \sigma_{y_{c_2}y_{c_3}}^2  \\ 
+\sigma_{x_{c_1}x_{c_3}}^2 & \sigma_{y_{c_1}x_{c_3}}^2 & \sigma_{x_{c_2}x_{c_3}}^2 & \sigma_{y_{c_2}x_{c_3}}^2 & \sigma_{x_{c_3}x_{c_3}}^2 & \sigma_{x_{c_3}y_{c_3}}^2  \\ 
+\sigma_{x_{c_1}y_{c_3}}^2 & \sigma_{y_{c_1}y_{c_3}}^2 & \sigma_{x_{c_2}y_{c_3}}^2 & \sigma_{y_{c_2}y_{c_3}}^2 & \sigma_{x_{c_3}y_{c_3}}^2 & \sigma_{y_{c_3}y_{c_3}}^2  \\ 
+ \end{bmatrix}
+ = 
+ \begin{bmatrix}
+ 0.5 & 0.3 & 0 & 0 & 0 & 0 \\
+ 0.3 & 0.5 & 0 & 0 & 0 & 0 \\
+ 0 & 0 & 0.4 & 0.1 & 0 & 0 \\
+ 0 & 0 & 0.1 & 0.2 & 0 & 0 \\
+ 0 & 0 & 0 & 0 & 0.7 & 0.4 \\
+ 0 & 0 & 0 & 0 & 0.4 & 0.4 \\
+ \end{bmatrix} 
+\]
+
+Calculate the 2D Conformal (Four Parameter Similarity Transform) to go from the measured coordinates to the control coordinates.  (Note that the block diagonal structure of this covariance matrix describes that the x and y coordinate are correlated to each other for each point, but there is no correlation between points).  The 2D Conformal equations are:
+
+\begin{align*}
+x_c &= (S\cos(\theta))x - (S\sin(\theta))y + T_x \\
+y_c &= (S\sin(\theta))x - (S\cos(\theta))y + T_y \\
+\end{align*}
+
+By substituting: 
+
+\begin{align*}
+	a &= S\cos(\theta) \\
+	b &= S\sin(\theta) \\
+\end{align*}
+Where:
+
+\begin{align*}
+	\theta &= \tan^{-1}(\dfrac{b}{a}) \\
+	S &= \dfrac{a}{\cos(\theta)}
+\end{align*}
+
+The observation equations become:
+
+\begin{align*}
+	x_c &= ax - by + T_x \\
+	y_c &= bx - ay + T_y \\
+\end{align*}
+
+Note that every $(x_a,y_a)\rightarrow(x,y)$ correspondence produces 2 observation equations.
+
+\[
+A = \begin{bmatrix}
+x_1 & -y_1 & 1 & 0\\
+y_1 & x_1 & 0 & 1\\
+x_2 & -y_2 & 1 & 0\\
+y_2 & x_2 & 0 & 1\\
+x_3 & -y_3 & 1 & 0\\
+y_3 & x_3 & 0 & 1
+\end{bmatrix} =
+\begin{bmatrix}
+6 & -3 & 1 & 0\\
+3 & 6 & 0 & 1\\
+1 & -12 & 1 & 0\\
+12 & 1 & 0 & 1\\
+8 & -8 & 1 & 0\\
+8 & 8 & 0 & 1
+\end{bmatrix}
+\hspace{1cm}
+X = 
+\begin{bmatrix}
+a \\ b \\ T_x \\ T_y 
+\end{bmatrix}
+\hspace{1cm}
+L =
+\begin{bmatrix}
+x_{a_1} \\ y_{a_1} \\ x_{a_2} \\ y_{a_2} \\ x_{a_3} \\ y_{a_3}
+\end{bmatrix} = 
+\begin{bmatrix}
+1 \\ 0 \\2 \\5 \\3 \\1 
+\end{bmatrix}
+\hspace{1cm}
+W = inv(\Sigma_c)
+\]
+\clearpage
+Use the Equations and solve:
+\input{chapters/leastsquares/tab/exampleGLSresultsTable}
+Interpret the results:
+\begin{itemize}
+	\item $\theta$ and $S$ values and their covariances can be calculated using equations: $\theta = \tan^{-1}(\dfrac{b}{a})$ and $S = \dfrac{a}{\cos(\theta)}$
+	\item $R^2$ isn't really a valid metric here, the variance of the coordinate doesn't mean anything useful.
+	\item Error is assumed to only be in the control coordinates
+	\item We can use these results to transform other coordinates with uncertainty using GLOPOV
+	\item The $S_0^2$ value is not near one, indicating the variance-covariance matrix may have over-estimated the predicted error of the control data. a $\chi^2$ goodness of fit test should be done to confirm this.  
+\end{itemize}
+\begin{figure}[H]
+	\centering
+	\includegraphics[height = 3in]{GLSexample.png}
+\end{figure}
+
 \subsection{Example Matlab Code}
+\lstinputlisting[
+label      = {alg:exampleGLS},
+caption    = {exampleGLS.m},
+style      = Matlab-editor,
+basicstyle = \mlttfamily,
+firstline  = 1,
+lastline   = 39,
+firstnumber= 1
+]{exampleGLS.m}
+
+\lstinputlisting[
+label      = {alg:exampleGLS2},
+caption    = {The Matlab built in function LSCOV generates the same results},
+style      = Matlab-editor,
+basicstyle = \mlttfamily,
+firstline  = 41,
+lastline   = 42,
+firstnumber= 41
+]{exampleGLS.m}
+

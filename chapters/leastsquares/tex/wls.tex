@@ -73,6 +73,79 @@ w_1 \\ w_2 \\ \vdots \\ w_m
 \end{align*}
 \clearpage
 \subsection{Sample Problem}
-\subsection{Example Matlab Code}
+Given the points$(x,y)$ and weights$(Weights)$: 
+\[
+x = [0,1,2,3,4] \hspace{1cm} y = [5,1,7,13,24] \hspace{1cm} Weights = [1,10,100,5,1]
+\]
+Fit a parabola given the observation equation:
+\[
+y = m x +b
+\]
+Note that the observation equation is linear, and there are no covariances to the weights.  These weights have no units, and are just saying hey, I trust the third measurement 10 times more than I trust the second measurement.
+\[
+A = \begin{bmatrix}
+x_1 & 1 \\
+x_2 & 1 \\
+x_3 & 1 \\
+x_4 & 1 \\
+x_5 & 1 \\
+\end{bmatrix} =
+\begin{bmatrix}
+0 & 1 \\
+1 & 1 \\
+2 & 1 \\
+3 & 1 \\
+4 & 1 \\
+\end{bmatrix}
+\hspace{1cm}
+X = 
+\begin{bmatrix}
+a \\ b \\ c 
+\end{bmatrix}
+\hspace{1cm}
+L =
+\begin{bmatrix}
+y_1 \\ y_2 \\ y_3 \\ y_4 \\ y_5
+\end{bmatrix} = 
+\begin{bmatrix}
+5 \\ 1 \\ 7 \\ 13 \\ 24
+\end{bmatrix}
+\hspace{1cm}
+W = 
+\begin{bmatrix}
+15 & 0 & 0 & 0 & 0 \\
+0 & 10 & 0 & 0 & 0 \\
+0 & 0 & 100 & 0 & 0 \\
+0 & 0 & 0 & 5 & 0 \\
+0 & 0 & 0 & 0 & 1 \\
+\end{bmatrix}
+\]
+Use the Equations and solve:
+\input{chapters/leastsquares/tab/exampleWLSresultsTable}
 
+\begin{figure}[H]
+	\centering
+	\includegraphics[height = 3.25in]{WLSexample.png}
+\end{figure}
+
+\subsection{Example Matlab Code}
+\lstinputlisting[
+label      = {alg:exampleWLS},
+caption    = {exampleWLS.m},
+style      = Matlab-editor,
+basicstyle = \mlttfamily,
+firstline  = 1,
+lastline   = 25,
+firstnumber= 1
+]{exampleWLS.m}
+
+\lstinputlisting[
+label      = {alg:exampleWLS2},
+caption    = {The Matlab built in function LSCOV generates the same results},
+style      = Matlab-editor,
+basicstyle = \mlttfamily,
+firstline  = 27,
+lastline   = 28,
+firstnumber= 25
+]{exampleWLS.m}
 

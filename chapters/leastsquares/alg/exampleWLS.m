@@ -1,20 +1,22 @@
-%% Example Ordinary Least Squares Script
+%% Example Weighted Least Squares Script
 %% observations
 x = [0 1 2 3 4];
 y = [5 1 7 13 24];
+weights = [1 10 100 5 1];
 
 %% Define A and L based on observation equation
 A = [x(:).^2 x(:) ones(size(x(:)))];
 L = y(:);
+W = diag(weights);
 
-%% Calculate Ordinary Least Squares
+%% Calculate Weighted Least Squares
 m = numel(L);                   % number of observations
 n = size(A,2);                  % number of unknowns
 dof = m-n;                      % degrees of freedom
-X = (A'*A)\A'*L;                % unknowns(inv(A)*b' with 'A\b' per Matlab)
+X = (A'*W*A)\A'*W*L;            % unknowns(inv(A)*b' with 'A\b' per Matlab)
 V = A * X - L;                  % residuals
-So2 = V'*V/dof;                 % Reference Variance
-Q = inv(A'*A);                  % cofactor
+So2 = V'*W*V/dof;               % Reference Variance
+Q = inv(A'*W*A);                % cofactor
 Sx = So2 * Q;                   % covariance of unknowns
 Sl = A * Sx * A';               % covariance of observations
 stdX = sqrt(diag(Sx));          % std of solved unknowns
@@ -23,19 +25,23 @@ r2 = var(Lhat)/var(L);          % R^2 Skill
 RMSE = sqrt(V'*V/m);            % RMSE
 
 %% Using Matlab Built in Function LSCOV
-[matlab_X, matlab_stdX, matlab_So2, matlab_Sx] = lscov(A,L); %same results
+[mat_X, mat_stdX, mat_So2, mat_Sx] = lscov(A,L,weights); %same results
 
 %% Plot Results
+Xun = (A'*A)\A'*L;            % unweighted
+
 f = figure(1);clf
 xx = -1:0.01:5;
 yy = X(1)*xx.^2+X(2)*xx+X(3);
-plot(xx,yy,'k','linewidth',3);
+yy2 = Xun(1)*xx.^2+Xun(2)*xx+Xun(3);
+plot(xx,yy2,'b--','linewidth',3);
 hold on
+plot(xx,yy,'k','linewidth',3);
 plot(x,y,'r.','markersize',30);
 grid on
 xlabel('X','fontsize',20,'interpreter','latex')
 ylabel('Y','fontsize',20,'interpreter','latex')
-title('Ordinary Least Squares','fontsize',24,'interpreter','latex')
+title('Weighted Least Squares','fontsize',24,'interpreter','latex')
 h = text(-0.5,25,'y = ax$^2$ + bx + c','interpreter','latex');
 h.HorizontalAlignment = 'left';
 h.FontSize = 20;
@@ -48,13 +54,13 @@ h = text(0,25,{astr,bstr,cstr},'interpreter','latex');
 h.FontSize = 16;
 h.BackgroundColor = 'w';
 h.VerticalAlignment = 'top';
-hl=legend({'Ordinary Least Squares Fit','Observation Data'},'fontsize',16);
+hl=legend({'Ordinary Least Squares','Weighted Least Squares Fit','Observation Data'},'fontsize',16);
 hl.Interpreter = 'latex';
 hl.Location = 'northwest';
-saveas(f,'../fig/OLSexample.png');
+saveas(f,'../fig/WLSexample.png');
 
 %% Make Latex Results Table
-fid = fopen('../tab/exampleOLSresultsTable.tex','w+t');
+fid = fopen('../tab/exampleWLSresultsTable.tex','w+t');
 T = cell(4,3);
 
 T{1,1} = sprintf('$n = %.0f$',n);
