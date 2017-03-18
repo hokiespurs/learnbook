@@ -33,7 +33,7 @@ i = \text{loop iteration}
 \text{Observation Equations =  } F_m(x_1,x_2,...,x_n) = l_m \text{ (note: }AX\text{ is obs eqn, L is }[l_1,l_2...,l_m] \text{ )}
 \]
 \[
-J = \begin{bmatrix}
+J_i = \begin{bmatrix}
 \ddx{F_1}{x_1} & \ddx{F_1}{x_2} & \dots & \ddx{F_1}{x_n} \\
 \ddx{F_2}{x_1} & \ddx{F_2}{x_2} & \dots & \ddx{F_2}{x_n} \\
 \vdots & \vdots & \ddots& \vdots \\
@@ -45,9 +45,9 @@ J = \begin{bmatrix}
 \Delta x_1 \\ \Delta x_2 \\ \vdots \\ \Delta x_n
 \end{bmatrix}
 \hspace{0.5cm}
-K = 
+K_i = 
 \begin{bmatrix}
-l_1 - F_1(x_1,x_2,...,x_n) \\ l_2 - F_2(x_1,x_2,...,x_n)\\ \vdots \\ l_m - F_m(x_1,x_2,...,x_n)
+l_1 - F_1(\hat{X_i}) \\ l_2 - F_2(\hat{X_i})\\ \vdots \\ l_m - F_m(\hat{X_i})
 \end{bmatrix}
 \hspace{0.5cm}
 V = 
@@ -65,7 +65,7 @@ W =
 \end{bmatrix}
 ^{-1}
 \hspace{1cm}
-\text{Initial Guess } X_0 = 
+\text{Initial Guess } \hat{X_0} = 
 \begin{bmatrix}
 x_1 \\ x_2 \\ \vdots \\ x_n
 \end{bmatrix}
@@ -74,9 +74,11 @@ x_1 \\ x_2 \\ \vdots \\ x_n
 Loop until $\Delta X $ is small, or more robustly, loop until $S_0^2$ increases.  $S_0^2$ will increase slightly when you get down to really really small numbers and the cpu starts rounding.  Caveat: it will also increase if you have a really bad initial guess, and it starts diverging.
 \vspace{0.15cm}
 \begin{align*}
-\text{Loop Delta Estimate = }\Delta X &= inv(J^TWJ)J^TWK \\
+\text{Recalculate } K_i & = K(\hat{X_i})\\
+\text{Recalculate } J_i & = J(\hat{X_i})\\
+\text{Loop Delta Estimate = }\Delta X &= inv(J_i^TWJ_i)J_i^TWK_i \\
 \text{Loop Estimate = } \hat{X}_i &= X_{i-1}+\Delta X \\
-\text{Residuals} = V &= J\hat{X_i} - K \\
+\text{Residuals} = V &= J_i\Delta \hat{X_i} - K_i \\
 \text{Reference Variance} = S_0^2 &= \dfrac{V^TWV}{dof}
 \end{align*}
 	
@@ -88,12 +90,123 @@ Loop until $\Delta X $ is small, or more robustly, loop until $S_0^2$ increases.
 	\text{Covariance Matrix of Observations} &= \Sigma_{\hat{l}\hat{l}} = J \Sigma_{xx} J^T \\
 	\text{Standard Deviation of Solved Unknowns} &= \sigma_{\hat{X}} = \sqrt{diag(\Sigma_{xx})} \\
 	\text{Predicted L} &= \hat{L} = AX \\
-	\text{R$^2$ (model skill)} &= \dfrac{var(\hat{L})}{var(L)} \\
+	\text{R$^2$ (model skill)} &= \text{Not valid for nonlinear least squares} \\
 	\text{RMSE } &= \sqrt{\dfrac{VV^T}{m}} \\
 \end{align*}
 \clearpage
 \subsection{Sample Problem}
 
-Calculate Amplitude and Phase of Sine Wave with Known Period.
+Given a timeseries dataset (ts.csv) of a harmonic signal with a known period and estimated variance for each measurement, calculate the amplitude and Phase.
+\begin{figure}[H]
+	\centering
+	\includegraphics[height = 2in]{nonlineardata.png}
+\end{figure}
+
+The governing equation for the system is:
+\[
+F:\hspace{1cm} A \times \sin(\dfrac{2\pi}{T}t + \phi) = y
+\]
+
+Where:
+
+\begin{align*}
+\text{Amplitude(m)} &= A \\
+\text{Period(s)}    &= T = 2 \\
+\text{Phase(s)}     &= \phi \\
+\text{Elevation Measurement(m)} &= y \\
+\text{Time Measurement(s)} &= t \\	
+\end{align*}
+
+Note that this system is Nonlinear due to the Phase term.  The Jacobian is solved using the partial derivatives.
+
+\[
+J_i = \begin{bmatrix}
+	\ddx{F_1}{A} &  \ddx{F_1}{\phi} \\
+	\ddx{F_2}{A} & \ddx{F_2}{\phi} \\
+	\vdots & \vdots \\
+	\ddx{F_m}{A} & \ddx{F_m}{\phi} \\
+\end{bmatrix}
+=
+\begin{bmatrix}
+\sin(\dfrac{2\pi}{T}t_1 + \phi_i) & A_i \times \cos(\dfrac{2\pi}{T}t_1 + \phi_i) \\
+\sin(\dfrac{2\pi}{T}t_2 + \phi_i) & A_i \times \cos(\dfrac{2\pi}{T}t_2 + \phi_i) \\
+\vdots & \vdots \\
+\sin(\dfrac{2\pi}{T}t_m + \phi_i) & A_i \times \cos(\dfrac{2\pi}{T}t_m + \phi_i) \\
+\end{bmatrix}
+\]
+\[
+\Delta X = 
+\begin{bmatrix}
+\Delta A \\ \Delta \phi
+\end{bmatrix}
+\hspace{1cm}
+K_i = 
+\begin{bmatrix}
+l_1 - F_1(\hat{X_i}) \\ l_2 - F_2(\hat{X_i})\\ \vdots \\ l_m - F_m(\hat{X_i})
+\end{bmatrix}
+=
+\begin{bmatrix}
+y_1 - A_i \times \sin(\dfrac{2\pi}{T}t_1 + \phi_i) \\
+y_2 - A_i \times \sin(\dfrac{2\pi}{T}t_2 + \phi_i) \\
+\vdots \\
+y_m - A_i \times \sin(\dfrac{2\pi}{T}t_3 + \phi_i)
+\end{bmatrix}
+\]
+\[
+\text{Initial guess from looking at the plot } = X_0 = 
+\begin{bmatrix}
+A_0 \\ \phi_0
+\end{bmatrix}
+=
+\begin{bmatrix}
+1.5 \\ 1
+\end{bmatrix}
+\]
+\clearpage
+Solving using Equations:
+\input{chapters/leastsquares/tab/exampleNonlinearLSresultsTable}
+
+\input{chapters/leastsquares/tab/exampleNonlinearLSresultschi2}
+
+\input{chapters/leastsquares/tab/exampleNonlinearLSresultsTable2}
+\begin{figure}[H]
+	\centering
+	\includegraphics[height = 2in]{nonlinearresult.png}
+\end{figure}
+
+Note: The previous example could have been calculated using Weighted Least Squares (WLS)
+
+The Observation Equation can be rewritten as:
+\[
+A \times \sin(\dfrac{2\pi}{T}t) + B \times \cos(\dfrac{2\pi}{T}t) = y
+\]
+
+Where $A$, $B$, $T$ are unknowns and:
+\begin{align*}
+	Amp &= \sqrt{A^2+B^2}\\
+	\phi &= \tan^{-1}(B/A)\\
+\end{align*}
+\clearpage
+
+
 
 \subsection{Example Matlab Code}
+\lstinputlisting[
+label      = {alg:exampleNonlinearLS},
+caption    = {exampleNonlinearLS.m},
+style      = Matlab-editor,
+basicstyle = \mlttfamily,
+firstline  = 1,
+lastline   = 43,
+firstnumber= 1
+]{exampleNonlinearLS.m}
+
+\lstinputlisting[
+label      = {alg:exampleNonlinearLS},
+caption    = {The Matlab built in function NLINFIT generates the same results},
+style      = Matlab-editor,
+basicstyle = \mlttfamily,
+firstline  = 45,
+lastline   = 49,
+firstnumber= 45
+]{exampleNonlinearLS.m}

@@ -12,7 +12,7 @@ Sc = [0.5 0.3 0 0 0 0;
       0 0 0 0 0.7 -0.4;
       0 0 0 0 -0.4 0.4]; %variance-covariance of control data
   
-%% Define A and L based on observation equation
+%% Define A, L, and W based on observation equation
 A = nan(numel(x)*2,4);
 A(1:2:end)=[x(:) -y(:) ones(size(x(:))) zeros(size(y(:)))];
 A(2:2:end)=[y(:) x(:) zeros(size(y(:))) ones(size(x(:)))];

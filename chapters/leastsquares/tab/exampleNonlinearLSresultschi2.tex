@@ -1,0 +1,18 @@
+A two tailed $\chi^2$ Goodness of Fit Test is performed at the 0.05 Significance level:
+\begin{align*}
+\text{Null Hypothesis } H_0 &: S_0^2 = 1 \\
+\text{Alternative Hypothesis } H_a &: S_0^2 \neq 1 \\
+\text{Significance } &: \alpha = 0.05 
+\end{align*}
+Test Statistic:
+\[
+\chi^2 = \dfrac{vS_0^2}{\sigma^2} = \dfrac{dof\times S_0^2}{1} = dof\times S_0^2 = 133.07
+\]
+Rejection Region:
+\begin{align*}
+133.07 = \chi^2 &> \chi_{(\alpha/2,dof)}^2 = 30.75 \hspace{1cm} &(PASS)\\
+133.07 = \chi^2 &< \chi_{(1-\alpha/2,dof)}^2 = 69.02 \hspace{1cm} &(FAIL)
+\end{align*}
+Results:
+
+The results fail the $\chi^2$ Goodness of Fit Test at the 0.05 significance level, so check for blunders or a poor stochastic model

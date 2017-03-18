@@ -85,7 +85,7 @@ J = \begin{bmatrix}
 \hspace{0.5cm}
 K = 
 \begin{bmatrix}
-l_1 - F_1(x_1,x_2,...,x_n) \\ l_2 - F_2(x_1,x_2,...,x_n)\\ \vdots \\ l_m - F_m(x_1,x_2,...,x_n)
+l_1 - F_1(X_i) \\ l_2 - F_2(X_i)\\ \vdots \\ l_m - F_m(X_i)
 \end{bmatrix}
 \]
 \[
@@ -106,16 +106,16 @@ x_1 \\ x_2 \\ \vdots \\ x_n
 Loop until $\Delta X $ is small, or more robustly, loop until $S_0^2$ increases.  $S_0^2$ will increase slightly when you get down to really really small numbers and the cpu starts rounding.  Caveat: it will also increase if you have a really bad initial guess, and it starts diverging.
 \vspace{0.15cm}
 \begin{align*}
-	\text{Equivalent Weight = } W_{eq} &= inv(B\Sigma B^T) \\
-	\text{Loop Delta Estimate = }\Delta X &= inv(J^TW_{eq}J)J^TW_{eq}K \\
-	\text{Loop Estimate = } \hat{X}_i &= X_{i-1}+\Delta X \\
-	\text{Equivalent Residuals} = V_{eq} &= J\hat{X_i} - K \\
-	\text{Observation Residuals} = V &= \Sigma B^T W_{eq} V_{eq} \\
-	\text{Reference Variance} = S_0^2 &= \dfrac{V_{eq}^TW_{eq}V_{eq}}{dof}
+	\text{Equivalent Weight} &=  W_{eq} = inv(B\Sigma B^T) \\
+	\text{Loop Delta Estimate} &= \Delta X = inv(J^TW_{eq}J)J^TW_{eq}K \\
+	\text{Loop Estimate} &=  \hat{X}_i = X_{i-1}+\Delta X \\
+	\text{Equivalent Residuals} &= V_{eq} = J\Delta \hat{X_i} - K \\
+	\text{Reference Variance} &= S_0^2 = \dfrac{V_{eq}^TW_{eq}V_{eq}}{dof}
 \end{align*}
 
 \subsubsection{Final Calculations}
 \begin{align*}
+	\text{Observation Residuals} &= V = \Sigma B^T W_{eq} V_{eq} \\
 	\text{Unknowns} &= \hat{X} = \hat{X}_i \text{   (Final Loop Estimate)}\\
 	\text{Cofactor Matrix} &= Q_{xx} = inv(J^TW_{eq}J) \\
 	\text{Covariance Matrix of Unkowns} &= \Sigma_{xx} = S_0^2 \times Q_{xx} \\
@@ -126,6 +126,149 @@ Loop until $\Delta X $ is small, or more robustly, loop until $S_0^2$ increases.
 \clearpage
 \subsection{Sample Problem}
 
-Do y=mx+b with OLS and TLS and compare the results.
+Given the points and covariance matrix for each observation: 
+\[
+x = [10,20,60,40,85] \hspace{1cm} y = [0,15,23,25,40]
+\]
+\[
+\Sigma = 
+\begin{bmatrix}
+\sigma_{x_1x_1}^2 & \sigma_{x_1y_1}^2 & \sigma_{x_1x_2}^2 & \sigma_{x_1y_2}^2 & \sigma_{x_1x_3}^2 & \sigma_{x_1y_3}^2 & \sigma_{x_1x_4}^2 & \sigma_{x_1y_4}^2 & \sigma_{x_1x_5}^2 & \sigma_{x_1y_5}^2  \\ 
+\sigma_{x_1y_1}^2 & \sigma_{y_1y_1}^2 & \sigma_{y_1x_2}^2 & \sigma_{y_1y_2}^2 & \sigma_{y_1x_3}^2 & \sigma_{y_1y_3}^2 & \sigma_{y_1x_4}^2 & \sigma_{y_1y_4}^2 & \sigma_{y_1x_5}^2 & \sigma_{y_1y_5}^2  \\ 
+\sigma_{x_1x_2}^2 & \sigma_{y_1x_2}^2 & \sigma_{x_2x_2}^2 & \sigma_{x_2y_2}^2 & \sigma_{x_2x_3}^2 & \sigma_{x_2y_3}^2 & \sigma_{x_2x_4}^2 & \sigma_{x_2y_4}^2 & \sigma_{x_2x_5}^2 & \sigma_{x_2y_5}^2  \\ 
+\sigma_{x_1y_2}^2 & \sigma_{y_1y_2}^2 & \sigma_{x_2y_2}^2 & \sigma_{y_2y_2}^2 & \sigma_{y_2x_3}^2 & \sigma_{y_2y_3}^2 & \sigma_{y_2x_4}^2 & \sigma_{y_2y_4}^2 & \sigma_{y_2x_5}^2 & \sigma_{y_2y_5}^2  \\ 
+\sigma_{x_1x_3}^2 & \sigma_{y_1x_3}^2 & \sigma_{x_2x_3}^2 & \sigma_{y_2x_3}^2 & \sigma_{x_3x_3}^2 & \sigma_{x_3y_3}^2 & \sigma_{x_3x_4}^2 & \sigma_{x_3y_4}^2 & \sigma_{x_3x_5}^2 & \sigma_{x_3y_5}^2  \\ 
+\sigma_{x_1y_3}^2 & \sigma_{y_1y_3}^2 & \sigma_{x_2y_3}^2 & \sigma_{y_2y_3}^2 & \sigma_{x_3y_3}^2 & \sigma_{y_3y_3}^2 & \sigma_{y_3x_4}^2 & \sigma_{y_3y_4}^2 & \sigma_{y_3x_5}^2 & \sigma_{y_3y_5}^2  \\ 
+\sigma_{x_1x_4}^2 & \sigma_{y_1x_4}^2 & \sigma_{x_2x_4}^2 & \sigma_{y_2x_4}^2 & \sigma_{x_3x_4}^2 & \sigma_{y_3x_4}^2 & \sigma_{x_4x_4}^2 & \sigma_{x_4y_4}^2 & \sigma_{x_4x_5}^2 & \sigma_{x_4y_5}^2  \\ 
+\sigma_{x_1y_4}^2 & \sigma_{y_1y_4}^2 & \sigma_{x_2y_4}^2 & \sigma_{y_2y_4}^2 & \sigma_{x_3y_4}^2 & \sigma_{y_3y_4}^2 & \sigma_{x_4y_4}^2 & \sigma_{y_4y_4}^2 & \sigma_{y_4x_5}^2 & \sigma_{y_4y_5}^2  \\ 
+\sigma_{x_1x_5}^2 & \sigma_{y_1x_5}^2 & \sigma_{x_2x_5}^2 & \sigma_{y_2x_5}^2 & \sigma_{x_3x_5}^2 & \sigma_{y_3x_5}^2 & \sigma_{x_4x_5}^2 & \sigma_{y_4x_5}^2 & \sigma_{x_5x_5}^2 & \sigma_{x_5y_5}^2  \\ 
+\sigma_{x_1y_5}^2 & \sigma_{y_1y_5}^2 & \sigma_{x_2y_5}^2 & \sigma_{y_2y_5}^2 & \sigma_{x_3y_5}^2 & \sigma_{y_3y_5}^2 & \sigma_{x_4y_5}^2 & \sigma_{y_4y_5}^2 & \sigma_{x_5y_5}^2 & \sigma_{y_5y_5}^2  \\ 
+\end{bmatrix}
+\]
+\[
+\Sigma = 
+ \begin{bmatrix}
+ 45&-30&0&0&0&0&0&0&0&0\\
+ -30&30&0&0&0&0&0&0&0&0\\
+ 0&0&20&-10&0&0&0&0&0&0\\
+ 0&0&-10&70&0&0&0&0&0&0\\
+ 0&0&0&0&80&4&0&0&0&0\\
+ 0&0&0&0&4&4&0&0&0&0\\
+ 0&0&0&0&0&0&40&-13&0&0\\
+ 0&0&0&0&0&0&-13&60&0&0\\
+ 0&0&0&0&0&0&0&0&30&-25\\
+ 0&0&0&0&0&0&0&0&-25&30\\
+ \end{bmatrix}
+\]
+Fit a line given the observation equation:
+\[
+mx + b = y 
+\]
+With residuals for each observation:
+\[
+F: \hspace{1cm} m(x+v_x) + b - (y+v_y) = 0 
+\]
+\begin{align*}
+\ddx{F}{v_x} &= m \\
+\ddx{F}{v_y} &= -1\\
+\end{align*}
+Solving for Partial Derivatives:
+\[
+B = 
+\begin{bmatrix}
+\ddx{F_1}{v_{x_1}} & \ddx{F_1}{v_{y_1}} & 0 & 0 & \dots & 0 & 0 \\
+0 & 0 & \ddx{F_2}{v_{x_2}} & \ddx{F_2}{v_{y_2}} &  \dots  & 0 & 0 \\
+\vdots & \vdots & \vdots & \vdots & \ddots & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & \ddx{F_5}{v_{x_5}} & \ddx{F_5}{v_{y_5}} \\
+\end{bmatrix}
+=
+\begin{bmatrix}
+m & -1 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & m & -1 & 0 & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & m & -1 & 0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & m & -1 & 0 & 0 \\
+0 & 0 & 0 & 0 & 0 & 0 & 0 & 0 & m & -1 \\
+\end{bmatrix}
+\]
+\[
+V = 
+\begin{bmatrix}
+v_{x_1} \\
+v_{y_1} \\
+v_{x_2} \\
+v_{y_2} \\
+v_{x_3} \\
+v_{y_3} \\
+v_{x_4} \\
+v_{y_4} \\
+v_{x_5} \\
+v_{y_5} \\
+\end{bmatrix}
+\hspace{1cm}
+J_i = \begin{bmatrix}
+\ddx{F_1}{m_{\phantom{0}}} & \ddx{F_1}{b_{\phantom{0}}} \\
+\ddx{F_2}{m_{\phantom{0}}} & \ddx{F_2}{b_{\phantom{0}}} \\
+\ddx{F_3}{m_{\phantom{0}}} & \ddx{F_3}{b_{\phantom{0}}} \\
+\ddx{F_4}{m_{\phantom{0}}} & \ddx{F_4}{b_{\phantom{0}}} \\
+\ddx{F_5}{m_{\phantom{0}}} & \ddx{F_5}{b_{\phantom{0}}} \\
+\end{bmatrix}
+=
+\begin{bmatrix}
+x_1 & 1 \\
+x_2 & 1 \\
+x_3 & 1 \\
+x_4 & 1 \\
+x_5 & 1 \\
+\end{bmatrix}
+\hspace{1cm}
+\Delta X = 
+\begin{bmatrix}
+\Delta m \\ \Delta b
+\end{bmatrix}
+\]
+\[
+K_i = 
+\begin{bmatrix}
+l_1 - F_1(X_i) \\ l_2 - F_2(X_i)\\ \vdots \\ l_m - F_m(X_i)
+\end{bmatrix}
+= 
+\begin{bmatrix}
+0 - (m_ix_1+b_i-y_1)\\ 
+0 - (m_ix_2+b_i-y_2)\\
+0 - (m_ix_3+b_i-y_3)\\ 
+0 - (m_ix_4+b_i-y_4)\\
+0 - (m_ix_5+b_i-y_5)\\
+\end{bmatrix}
+\hspace{1cm}
+\text{Initial Guess } X_0 = 
+\begin{bmatrix}
+2 \\ 5
+\end{bmatrix}
+\]
+Solve Using Equations:
+\input{chapters/leastsquares/tab/exampleTLSresultsTable}
+\begin{figure}[H]
+	\centering
+	\includegraphics[height = 4in]{TLSexampleA.png}
+\end{figure}
 
+
+Notice how the observation residuals are not just in the y dimension.  OLS is calculated with the same data, and plotted below for comparison.
+
+\begin{figure}[H]
+	\centering
+	\includegraphics[height = 4in]{TLSexampleB.png}
+\end{figure}
+\clearpage
 \subsection{Example Matlab Code}
+\lstinputlisting[
+label      = {alg:exampleTLS},
+caption    = {exampleTLS.m},
+style      = Matlab-editor,
+basicstyle = \mlttfamily,
+firstline  = 1,
+lastline   = 34,
+firstnumber= 1
+]{exampleTLS.m}
+
+Note: Matlab does not have a built in TLS function.

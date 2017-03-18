@@ -4,7 +4,7 @@ x = [0 1 2 3 4];
 y = [5 1 7 13 24];
 weights = [1 10 100 5 1];
 
-%% Define A and L based on observation equation
+%% Define A, L, and W based on observation equation
 A = [x(:).^2 x(:) ones(size(x(:)))];
 L = y(:);
 W = diag(weights);
