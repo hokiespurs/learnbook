@@ -43,22 +43,24 @@ RMSE = sqrt(V'*V/m);            % RMSE
 
 %% Plot Results
 f = figure(1);clf
-plot(xc,yc,'g.','markersize',20)
+p1 = plot(xc,yc,'g.','markersize',20);
 hold on
-plot(x,y,'r.','markersize',20)
-plot(Lhat(1:2:end),Lhat(2:2:end),'b.','markersize',20)
+p2 = plot(x,y,'r.','markersize',20);
+p3 = plot(Lhat(1:2:end),Lhat(2:2:end),'b.','markersize',20);
 for i=1:3
     ind = (i-1)*2+1:(i-1)*2+2;
     plotCovarianceLine(xc(i),yc(i),Sc(ind,ind),0.5,inf,100,'g');
-    plot([xc(i) x(i)],[yc(i) y(i)],'--','color',[0.6 0.6 0.6])
+    p5 = plot([xc(i) x(i)],[yc(i) y(i)],'--','color',[0.6 0.6 0.6]);
 end
-
+p4 = plot(-999,999,'o','MarkerFaceColor','w','MarkerEdgeColor','g','markersize',20);
 grid on
 axis equal
+xlim([-5 12]);
+ylim([-1 13])
 xlabel('X','fontsize',20,'interpreter','latex')
 ylabel('Y','fontsize',20,'interpreter','latex')
 title('GLS 2D Conformal Transformation','fontsize',24,'interpreter','latex')
-hl=legend({'$(x_c,y_c)$',...
+hl=legend([p1 p2 p3 p4 p5],{'$(x_c,y_c)$',...
     '$(x,y)$','$(\hat{x_c},\hat{y_c})$',...
     'Control $\sigma_{50\%}$',...
     'correspondences'},'fontsize',16);

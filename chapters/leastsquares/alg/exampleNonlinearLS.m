@@ -46,7 +46,7 @@ stdX_b = sqrt(diag(Sx_b));      % std of solved unknowns     w/ So2 = 1
 beta0 = [1.5; 1];
 modelfun = @(b,x)(b(1)*sin(2*pi/2*x+b(2)));
 [mat_X,mat_V,mat_J,mat_Sx,mat_So2,ErrorModelInfo] = ...
-    nlinfit(t,y,modelfun,beta0,'Weights',1./noisescale.^2);
+    nlinfit(t,y,modelfun,beta0,'Weights',1./stdy.^2);
 
 %% Print chi2 tests
 if chi2>chi2low || chi2<chi2high
@@ -65,7 +65,7 @@ f = figure(1);clf;
 f.Position = [415 346 1110 384];
 plot(t,y,'b.','markersize',10)
 axis equal
-xlim([0 MAXT]);
+xlim([0 10]);
 grid on
 xlabel('time(s)','fontsize',20,'interpreter','latex')
 ylabel('elevation(m)','fontsize',20,'interpreter','latex')
@@ -76,7 +76,7 @@ saveas(f,'../fig/nonlineardata.png')
 hold on
 A = X(1);
 PHI = X(2);
-xi = linspace(0,MAXT,10000);
+xi = linspace(0,10,10000);
 yi = A * sin(2*pi/2*xi + PHI);
 plot(xi,yi,'g-')
 legend({'Raw Observations','Nonlinear Least Squares'},...

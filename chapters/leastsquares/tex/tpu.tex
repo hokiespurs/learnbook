@@ -1,1 +1,43 @@
 \section{Error Propagation (GLOPOV/SLOPOV)}
+
+\subsection{GLOPOV}
+\begin{align*}
+\Sigma_{ZZ} &= 
+\begin{bmatrix}[1.5]
+\ddx{Z_1}{x_1} & \ddx{Z_1}{x_2} & \hdots & \ddx{Z_1}{x_n} \\
+\ddx{Z_2}{x_1} & \ddx{Z_2}{x_2} & \hdots & \ddx{Z_2}{x_n} \\
+\vdots & \vdots & \ddots & \vdots \\
+\ddx{Z_m}{x_1} & \ddx{Z_m}{x_2} & \hdots & \ddx{Z_m}{x_n} \\
+\end{bmatrix}
+\times
+\begin{bmatrix}[1.5]
+\sigma^2_{x_{1}} & \sigma_{x_{1}x_{2}} & \hdots & \sigma_{x_{1}x_{n}} \\
+\sigma_{x_{1}x_{2}} & \sigma^2_{x_{2}} & \hdots & \sigma_{x_{2}x_{n}} \\
+\vdots & \vdots & \ddots & \vdots \\
+\sigma_{x_{1}x_{n}} & \sigma_{x_{2}x_{n}} & \hdots & \sigma^2_{x_{n}} \\
+\end{bmatrix}
+\times
+\begin{bmatrix}[1.5]
+\ddx{Z_1}{x_1} & \ddx{Z_2}{x_1} & \hdots & \ddx{Z_m}{x_1} \\
+\ddx{Z_1}{x_2} & \ddx{Z_2}{x_2} & \hdots & \ddx{Z_m}{x_2} \\
+\vdots & \vdots & \ddots & \vdots \\
+\ddx{Z_1}{x_n} & \ddx{Z_2}{x_n} & \hdots & \ddx{Z_m}{x_n} \\
+\end{bmatrix} \\
+\Sigma_{ZZ} &= 
+A\Sigma A^T
+\end{align*}
+
+\subsection{SLOPOV}
+If there are no covariances:
+\[
+\Sigma = 
+\begin{bmatrix}
+\sigma^2_{x_{1}} & 0 & \hdots & 0 \\
+0 & \sigma^2_{x_{2}} & \hdots & 0 \\
+\vdots & \vdots & \ddots & \vdots \\
+0 & 0 & \hdots & \sigma^2_{x_{n}} \\
+\end{bmatrix}
+\]
+\[
+\sigma_Z = \sqrt{(\ddx{Z_1}{x_1} \sigma_{x_1})^2+(\ddx{Z_1}{x_2} \sigma_{x_2})^2+\dots+(\ddx{Z_1}{x_n} \sigma_{x_n})^2}
+\]

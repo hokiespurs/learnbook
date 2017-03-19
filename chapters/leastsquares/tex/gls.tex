@@ -70,6 +70,7 @@ W =
 \clearpage
 
 \subsection{Sample Problem}
+\todo{fix variance covariance EVERYWHERE so only variances are squared... pg88 ghilani}
 Given the control coordinates $(x_c,y_c)$, corresponding measured coordinates $(x,y)$, and estimated covariance matrix of the control coordinates $\Sigma_c$: 
 \[
 x_c = [1,2,3] \hspace{1cm} y_c = [0, 5, 1]  \hspace{1cm} x = [6,1,8] \hspace{1cm} y = [3,12,8]
@@ -118,14 +119,23 @@ Where:
 The observation equations become:
 
 \begin{align*}
-	x_c &= ax - by + T_x \\
-	y_c &= bx - ay + T_y \\
+	F: \hspace{1cm} x_c &= ax - by + T_x \\
+	G: \hspace{1cm} y_c &= bx - ay + T_y \\
 \end{align*}
 
 Note that every $(x_a,y_a)\rightarrow(x,y)$ correspondence produces 2 observation equations.
 
 \[
-A = \begin{bmatrix}
+A = 
+\begin{bmatrix}[1.5]
+\ddx{F_1}{a} & \ddx{F_1}{b} & \ddx{F_1}{T_x} & \ddx{F_1}{T_y}\\
+\ddx{G_1}{a} & \ddx{G_1}{b} & \ddx{G_1}{T_x} & \ddx{G_1}{T_y}\\
+\ddx{F_2}{a} & \ddx{F_2}{b} & \ddx{F_2}{T_x} & \ddx{F_2}{T_y}\\
+\ddx{G_2}{a} & \ddx{G_2}{b} & \ddx{G_2}{T_x} & \ddx{G_2}{T_y}\\
+\ddx{F_3}{a} & \ddx{F_3}{b} & \ddx{F_3}{T_x} & \ddx{F_3}{T_y}\\
+\ddx{G_3}{a} & \ddx{G_3}{b} & \ddx{G_3}{T_x} & \ddx{G_3}{T_y}\\
+\end{bmatrix} =
+\begin{bmatrix}
 x_1 & -y_1 & 1 & 0\\
 y_1 & x_1 & 0 & 1\\
 x_2 & -y_2 & 1 & 0\\
@@ -146,8 +156,12 @@ X =
 \begin{bmatrix}
 a \\ b \\ T_x \\ T_y 
 \end{bmatrix}
-\hspace{1cm}
+\]
+\[
 L =
+\begin{bmatrix}
+F(X_1) \\ G(X_1) \\ F(X_2) \\ G(X_2) \\ F(X_3) \\ G(X_3) \\
+\end{bmatrix} = 
 \begin{bmatrix}
 x_{a_1} \\ y_{a_1} \\ x_{a_2} \\ y_{a_2} \\ x_{a_3} \\ y_{a_3}
 \end{bmatrix} = 
@@ -157,7 +171,6 @@ x_{a_1} \\ y_{a_1} \\ x_{a_2} \\ y_{a_2} \\ x_{a_3} \\ y_{a_3}
 \hspace{1cm}
 W = inv(\Sigma_c)
 \]
-\clearpage
 Use the Equations and solve:
 \input{chapters/leastsquares/tab/exampleGLSresultsTable}
 Interpret the results:
