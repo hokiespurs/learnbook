@@ -1,7 +1,31 @@
 \section{Error Propagation (GLOPOV/SLOPOV)}
+Unknown values (Z) are often calculated from measurements (x), which contain uncertainty ($\Sigma_x$).  
 
-\subsection{GLOPOV}
+For example:
+
 \begin{align*}
+Z_1 &= F_1(x_1,x_2,\dots,x_n) \\
+Z_2 &= F_2(x_1,x_2,\dots,x_n) \\
+&\vdots \\
+Z_m &= F_m(x_1,x_2,\dots,x_n) \\
+\end{align*}
+
+With the Covariance Matrix:
+\[
+\begin{bmatrix}[1.5]
+\sigma^2_{x_{1}} & \sigma_{x_{1}x_{2}} & \hdots & \sigma_{x_{1}x_{n}} \\
+\sigma_{x_{1}x_{2}} & \sigma^2_{x_{2}} & \hdots & \sigma_{x_{2}x_{n}} \\
+\vdots & \vdots & \ddots & \vdots \\
+\sigma_{x_{1}x_{n}} & \sigma_{x_{2}x_{n}} & \hdots & \sigma^2_{x_{n}} \\
+\end{bmatrix}
+\]
+
+The propagation of uncertainty is governed by the \textit{general law of propagation of variances} (GLOPOV).
+\subsection{GLOPOV}
+The equation for GLOPOV is given as:
+\begin{align*}
+\Sigma_{ZZ} &= 
+A\Sigma A^T \\
 \Sigma_{ZZ} &= 
 \begin{bmatrix}[1.5]
 \ddx{Z_1}{x_1} & \ddx{Z_1}{x_2} & \hdots & \ddx{Z_1}{x_n} \\
@@ -22,13 +46,87 @@
 \ddx{Z_1}{x_2} & \ddx{Z_2}{x_2} & \hdots & \ddx{Z_m}{x_2} \\
 \vdots & \vdots & \ddots & \vdots \\
 \ddx{Z_1}{x_n} & \ddx{Z_2}{x_n} & \hdots & \ddx{Z_m}{x_n} \\
-\end{bmatrix} \\
-\Sigma_{ZZ} &= 
-A\Sigma A^T
+\end{bmatrix}
 \end{align*}
+For Example:
+
+The slope and y-intercept of a linear line are calculated using least squares.  The values are:
+\[
+m = 1.25 \hspace{1cm} b = 0.3 \hspace{1cm} \Sigma_x = 
+\begin{bmatrix}[1.5]
+0.2 & -1 \\
+-1 & 10 \\
+\end{bmatrix}
+\]
+Calculate the expected value and uncertainty of points:
+\[
+x_1 = 3.0\pm 0 \hspace{1cm} x_2 = 5.0 \pm 0.2 
+\]
+Using GLOPOV:
+\begin{align*}
+Z_1: \hspace{1cm} y &= mx_1+b = (1.25)(3.0) + (0.3) \\
+Z_2: \hspace{1cm} y &= mx_2+b = (1.25)(5.0) + (0.3) \\
+\end{align*}
+\[
+\Sigma = 
+\begin{bmatrix}[1.5]
+\sigma^2_{m} & \sigma_{mb}  & 0 & 0\\
+\sigma_{mb} & \sigma^2_{b}  & 0 & 0\\
+0 & 0  & \sigma^2_{x_1} & 0 \\
+0 & 0  & 0 & \sigma^2_{x_2} \\
+\end{bmatrix}
+=
+\begin{bmatrix}[1.5]
+0.2 & -1  & 0 & 0\\
+-1 & 10  & 0 & 0\\
+0 & 0  & 0 & 0 \\
+0 & 0  & 0 & 0.2 \\
+\end{bmatrix}
+\]
+\[
+A = 
+\begin{bmatrix}[1.5]
+\ddx{Z_1}{m} & \ddx{Z_1}{b} & \ddx{Z_1}{x_1} & \ddx{Z_1}{x_2} \\
+\ddx{Z_2}{m} & \ddx{Z_2}{b} & \ddx{Z_2}{x_1} & \ddx{Z_2}{x_2} \\
+\end{bmatrix}
+= 
+\begin{bmatrix}[1.5]
+x_1 & 1 & m & 0 \\
+x_2 & 1 & 0 & m \\
+\end{bmatrix}
+=
+\begin{bmatrix}[1.5]
+3.0 & 1 & 1.25 & 0 \\
+5.0 & 1 & 0 & 1.25 \\
+\end{bmatrix}
+\]
+\[
+\Sigma_{ZZ} = A\Sigma A^T = 
+\begin{bmatrix}[1.5]
+3.0 & 1 & 1.25 & 0 \\
+5.0 & 1 & 0 & 1.25 \\
+\end{bmatrix}
+\begin{bmatrix}[1.5]
+0.2 & -1  & 0 & 0\\
+-1 & 10  & 0 & 0\\
+0 & 0  & 0 & 0 \\
+0 & 0  & 0 & 0.2 \\
+\end{bmatrix}
+\begin{bmatrix}[1.5]
+3.0   & 5.0  \\
+1   & 1  \\
+1.25 & 0 \\
+0 & 1.25 \\
+\end{bmatrix}
+= 
+\begin{bmatrix}
+5.80&5.00\\
+5.00&5.31\\
+\end{bmatrix}
+\]
 
 \subsection{SLOPOV}
-If there are no covariances:
+With \textbf{no covariances}, and only \textbf{one function Z}, GLOPOV can be simplified by the \textit{special law of propagation of variances} SLOPOV:
 \[
 \Sigma = 
 \begin{bmatrix}
@@ -39,5 +137,35 @@ If there are no covariances:
 \end{bmatrix}
 \]
 \[
-\sigma_Z = \sqrt{(\ddx{Z_1}{x_1} \sigma_{x_1})^2+(\ddx{Z_1}{x_2} \sigma_{x_2})^2+\dots+(\ddx{Z_1}{x_n} \sigma_{x_n})^2}
+\sigma_{Z_1} = \sqrt{(\ddx{Z_1}{x_1} \sigma_{x_1})^2+(\ddx{Z_1}{x_2} \sigma_{x_2})^2+\dots+(\ddx{Z_1}{x_n} \sigma_{x_n})^2}
+\]
+
+\vspace{0.5cm}
+\noindent
+So for example, if the sides of a fish tank are measured as:
+\begin{align*}
+L &= 10.1 cm \pm 0.25cm \\
+W &= 4.7 cm  \pm 0.03cm \\
+H &= 6.3 cm  \pm 0.10cm \\
+\end{align*}
+
+Calculate the volume of the fish tank using the equation:
+\begin{align*}
+V &= LWH \\
+V &= (10.1cm)(4.7cm)(6.3cm) \\
+V &= 299.06 cm^3
+\end{align*}
+
+Solve Estimated $\sigma$ using SLOPOV:
+\begin{align*}
+\sigma_{V} &= \sqrt{(\ddx{V}{L} \sigma_{L})^2+(\ddx{V}{W} \sigma_{W})^2+(\ddx{V}{H} \sigma_{H})^2} \\
+\sigma_{V} &= \sqrt{(WH (0.25cm))^2+(LH (0.03cm))^2+(LW (0.10cm))^2} \\
+\sigma_{V} &= \sqrt{((4.7cm)(6.3cm)(0.25cm))^2+((10.1cm)(6.3cm) (0.03cm))^2+((10.1cm)(4.7cm) (0.10cm))^2} \\
+\sigma_V &= 9.00 cm^3
+\end{align*}
+
+Answer:
+
+\[
+V = 299.06 cm^3 \pm 9.00 cm^3
 \]
