@@ -1,1 +1,9 @@
 \section{Example: 3D Conformal Transformation with TLS}
+Solve the 3D Conformal (7-parameter Helmert) Transformation given the following correspondences and covariance matrix.
+
+Using the observation equations:
+\begin{align*}
+x\cos(\kappa)\cos(\phi) +                                            y\cos(\phi)\sin(\kappa)                                          - z\sin(\phi) + t_x - X &= 0 \\
+- x(\cos(\omega)\sin(\kappa) - \cos(\kappa)\sin(\omega)\sin(\phi)) + y(\cos(\kappa)\cos(\omega) + \sin(\kappa)\sin(\omega)\sin(\phi)) + z\cos(\phi)\sin(\omega) + t_y - Y &= 0 \\
+x(\sin(\kappa)\sin(\omega) + \cos(\kappa)\cos(\omega)\sin(\phi)) -   y(\cos(\kappa)\sin(\omega) - \cos(\omega)\sin(\kappa)\sin(\phi)) + z\cos(\omega)\cos(\phi) +t_x - Z &= 0 
+\end{align*}

@@ -48,7 +48,23 @@ A\Sigma A^T \\
 \ddx{Z_1}{x_n} & \ddx{Z_2}{x_n} & \hdots & \ddx{Z_m}{x_n} \\
 \end{bmatrix}
 \end{align*}
-For Example:
+
+\subsection{SLOPOV}
+With \textbf{no covariances}, and only \textbf{one function Z}, GLOPOV can be simplified by the \textit{special law of propagation of variances} SLOPOV:
+\[
+\Sigma = 
+\begin{bmatrix}
+\sigma^2_{x_{1}} & 0 & \hdots & 0 \\
+0 & \sigma^2_{x_{2}} & \hdots & 0 \\
+\vdots & \vdots & \ddots & \vdots \\
+0 & 0 & \hdots & \sigma^2_{x_{n}} \\
+\end{bmatrix}
+\]
+\[
+\sigma_{Z_1} = \sqrt{(\ddx{Z_1}{x_1} \sigma_{x_1})^2+(\ddx{Z_1}{x_2} \sigma_{x_2})^2+\dots+(\ddx{Z_1}{x_n} \sigma_{x_n})^2}
+\]
+\clearpage
+\subsection{GLOPOV Example}
 
 The slope and y-intercept of a linear line are calculated using least squares.  The values are:
 \[
@@ -124,31 +140,12 @@ x_2 & 1 & 0 & m \\
 5.00&5.31\\
 \end{bmatrix}
 \]
-
-\subsection{SLOPOV}
-With \textbf{no covariances}, and only \textbf{one function Z}, GLOPOV can be simplified by the \textit{special law of propagation of variances} SLOPOV:
-\[
-\Sigma = 
-\begin{bmatrix}
-\sigma^2_{x_{1}} & 0 & \hdots & 0 \\
-0 & \sigma^2_{x_{2}} & \hdots & 0 \\
-\vdots & \vdots & \ddots & \vdots \\
-0 & 0 & \hdots & \sigma^2_{x_{n}} \\
-\end{bmatrix}
-\]
-\[
-\sigma_{Z_1} = \sqrt{(\ddx{Z_1}{x_1} \sigma_{x_1})^2+(\ddx{Z_1}{x_2} \sigma_{x_2})^2+\dots+(\ddx{Z_1}{x_n} \sigma_{x_n})^2}
-\]
-
-\vspace{0.5cm}
-\noindent
-So for example, if the sides of a fish tank are measured as:
+\subsection{SLOPOV Example}
 \begin{align*}
 L &= 10.1 cm \pm 0.25cm \\
 W &= 4.7 cm  \pm 0.03cm \\
-H &= 6.3 cm  \pm 0.10cm \\
+H &= 6.3 cm  \pm 0.10cm
 \end{align*}
-
 Calculate the volume of the fish tank using the equation:
 \begin{align*}
 V &= LWH \\
@@ -164,8 +161,4 @@ Solve Estimated $\sigma$ using SLOPOV:
 \sigma_V &= 9.00 cm^3
 \end{align*}
 
-Answer:
-
-\[
-V = 299.06 cm^3 \pm 9.00 cm^3
-\]
+Answer: $V = 299.06 cm^3 \pm 9.00 cm^3$

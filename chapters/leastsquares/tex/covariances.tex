@@ -4,25 +4,31 @@ Covariance Matrices (Variance-Covariance Matrices), are used to depict the uncer
 Lets say you are standing at point (0,0) in a local coordinate system.  Using a compass you determine that a tree is located at about a 45 degree azimuth from true north, and about 100 meters away.  Using trigonometry, you can report the coordinate using the equations:
 \begin{align*}
 x_{tree} &= d \cos(az) \\
-y_{tree} &= d \sin(az) \\
+y_{tree} &= d \sin(az)
 \end{align*}
 
-\missingfigure{show drawing of scene}
+\begin{figure}[H]
+	\centering
+	\includegraphics[height = 3in]{treefig.png}
+\end{figure}
 
 If you determined that you had some uncertainty in your measurements:
 
 \begin{align*}
-\sigma_d &= 10m \\
-\sigma_{az} &= 1\degree \\
+d \pm \sigma_d &= 100m \pm 10m \\
+az \pm \sigma_{az} &= 45\degree  \pm 1\degree
 \end{align*}
 
-The estimate for the position of the tree would look something like this (note: this is calculated in the Error Propagation section):
+The estimate for the position of the tree would look something like the following figure, because there is much more uncertainty in the distance measurement than the angle measurement.
 
-\missingfigure{show drawing of error ellipse}
+\begin{figure}[H]
+	\centering
+	\includegraphics[height = 3in]{treefigconfidence.png}
+\end{figure}
 
-If you were to simply represent the x and y coordinate from this solution using the variance of each component, your uncertainty region would look like a rectangle.  But, this would be discarding relevant information.
+If you were to simply represent the x and y coordinate from this solution using the variance of each component, your uncertainty region would look like a rectangle.  But, this would be discarding relevant information from how the coordinate was computed.
 
-Notice that the shape of the most probably region for the tree is an ellipse.  As the x estimate is too high, so is the y estimate.  As the x estimate is too low, so is the y estimate.  The error between the two uncertainties are correlated.  This information is what is encompassed in the covariance matrix, where the diagonal elements are the variances of each variable, and the off diagonal elements are the "covariances", which represent the correlation between the errors.  In the tree example, the covariances would be positive, as their is a positive correlation between the x and y errors.  
+Notice that the shape of the most probably region for the tree is an ellipse.  As the x estimate is too high, so is the y estimate.  As the x estimate is too low, so is the y estimate.  The error between the two uncertainties are correlated.  This information is what is encompassed in the covariance matrix, where the diagonal elements are the variances of each variable, and the off diagonal elements are the "covariances", which represent the correlation between the errors.  In the tree example, the covariances would be positive, as there is a positive correlation between the x and y errors.  (As the predicted X increases, the predicted Y increases)
 
 \[
 \Sigma =
@@ -49,7 +55,7 @@ C & C & V \\
 \end{bmatrix}
 \]
 
-Covariance matrices must have a specific structure.  A covariance matrix must be:
+Covariance matrices must have a specific structure.  A covariance matrix must:
 \begin{itemize}
 	\item Be Symmetrical
 	\item Be Positive Semi-Definite (positive eigen values)
