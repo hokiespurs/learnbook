@@ -25,6 +25,8 @@ RMSE = sqrt(V'*V/m);            % RMSE
 %% Using Matlab Built in Function LSCOV
 [matlab_X, matlab_stdX, matlab_So2, matlab_Sx] = lscov(A,L); %same results
 
+%% Example Using LSRLIN
+[X,Sx,lsainfo] = lsrlin(A,L);
 %% Plot Results
 f = figure(1);clf
 xx = -1:0.01:5;

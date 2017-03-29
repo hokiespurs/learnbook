@@ -78,7 +78,7 @@ Loop until $\Delta X $ is small, or more robustly, loop until $S_0^2$ increases.
 \text{Recalculate } J_i & = J(\hat{X_i})\\
 \text{Loop Delta Estimate = }\Delta X &= inv(J_i^TWJ_i)J_i^TWK_i \\
 \text{Loop Estimate = } \hat{X}_i &= X_{i-1}+\Delta X \\
-\text{Residuals} = V &= J_i\Delta \hat{X_i} - K_i \\
+\text{Residuals} = V &= K_i \\
 \text{Reference Variance} = S_0^2 &= \dfrac{V^TWV}{dof}
 \end{align*}
 	

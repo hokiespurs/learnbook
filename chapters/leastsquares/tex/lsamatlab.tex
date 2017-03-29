@@ -1,11 +1,36 @@
 \section{Least Squares Adjustment Matlab Functions}
 Copying the same code over and over again, or relying on matlab toolboxes for different least squares adjustments is annoying, so here are some functions that perform the least squares calculations when provided with the input matrices and functions.
 
-\subsection{\textit{lsalin.m}: \textbf{l}east \textbf{s}quares \textbf{a}djustment \textbf{lin}ear}
-linear least squares
+\subsection{\textit{lsrlin.m}: \textnormal{\textbf{l}east \textbf{s}quares \textbf{r}egression \textbf{lin}ear}}
+\lstinputlisting[
+label      = {alg:examplelsrlin},
+caption    = {exampleGLS.m lsrlin.m is used to perform GLS.},
+style      = Matlab-editor,
+basicstyle = \mlttfamily,
+firstline  = 44,
+lastline   = 45,
+firstnumber= 44
+]{exampleGLS.m}
 
-\subsection{\textit{lsanlin.m}: \textbf{l}east \textbf{s}quares \textbf{a}djustment \textbf{n}on\textbf{lin}ear}
-nonlinear least squares
+\subsection{\textit{lsrnlin.m}: \textnormal{\textbf{l}east \textbf{s}quares \textbf{r}egression \textbf{n}on\textbf{lin}ear}}
+\lstinputlisting[
+label      = {alg:examplelsrnlin},
+caption    = {exampleNonlinearLS.m lsrnlin.m and anonymous function handles are used to perform Nonlinear Least Squares.},
+style      = Matlab-editor,
+basicstyle = \mlttfamily,
+firstline  = 51,
+lastline   = 55,
+firstnumber= 51
+]{exampleNonlinearLS.m}
 
-\subsection{\textit{lsatls.m}: \textbf{l}east \textbf{s}quares \textbf{a}djustment \textbf{t}otal \textbf{l}east \textbf{s}quares}
-total least squares
+
+\subsection{\textit{lsrtls.m}: \textnormal{\textbf{l}east \textbf{s}quares \textbf{r}egression \textbf{t}otal \textbf{l}east \textbf{s}quares}}
+\lstinputlisting[
+label      = {alg:examplelsrtls},
+caption    = {exampleTLS.m: lsrtls.m and anonymous function handles are used to perform TLS.},
+style      = Matlab-editor,
+basicstyle = \mlttfamily,
+firstline  = 36,
+lastline   = 40,
+firstnumber= 36
+]{exampleTLS.m}

@@ -7,19 +7,19 @@ stdy = data(:,3);               % reported std for each observation
 W = inv(diag(stdy.^2));         % Create a Weight Matrix based on the stdy
 
 %% Solve Least Squares
-X = [1.5; 1];                   % initial unknowns guess
+Xo = [1.5; 1];                   % initial unknowns guess
+X = Xo;
+So2 = inf; dSo2 = 1; iter = 0;  % initialize while loop
 
-So2 = inf; dSo2 = 1; iter = 0;  % initialize for while loop
-
-m = NPTS;                       % number of observations
-n = 2;                          % number of unknowns
+m = numel(t);                       % number of observations
+n = numel(X);                   % number of unknowns
 dof = m-n;                      % degrees of freedom
 while dSo2>=0 && iter<100 %loop until So2 increases or exceed 100 iteration
     J = [sin(2*pi/2.*t + X(2)) X(1)*cos(2*pi/2.*t + X(2))];
     K = y - X(1)*sin(2*pi/2.*t + X(2));
     dX = (J'*W*J)\J'*W*K;       % Loop Delta Estimate
     X = X + dX;                 % Loop Estimate
-    V = J*dX-K;                 % Residuals
+    V = K;                      % Residuals
     dSo2 = So2 - V'*W*V/dof;    % Change in Reference Variance
     So2 = (V'*W*V)/dof;         % Reference Variance
     iter = iter + 1;
@@ -47,6 +47,12 @@ beta0 = [1.5; 1];
 modelfun = @(b,x)(b(1)*sin(2*pi/2*x+b(2)));
 [mat_X,mat_V,mat_J,mat_Sx,mat_So2,ErrorModelInfo] = ...
     nlinfit(t,y,modelfun,beta0,'Weights',1./stdy.^2);
+
+%% Example Using LSRNLIN
+Jfun = @(X)([sin(2*pi/2.*t + X(2)) X(1)*cos(2*pi/2.*t + X(2))]);
+Kfun = @(X)(y - X(1)*sin(2*pi/2.*t + X(2)));
+s = diag(stdy.^2);
+[X,Sx,lsainfo] = lsrnlin(Jfun,Kfun,Xo,s);
 
 %% Print chi2 tests
 if chi2>chi2low || chi2<chi2high

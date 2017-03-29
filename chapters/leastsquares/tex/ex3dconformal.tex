@@ -2,8 +2,114 @@
 Solve the 3D Conformal (7-parameter Helmert) Transformation given the following correspondences and covariance matrix.
 
 Using the observation equations:
+\[
+R = 
+\begin{bmatrix}
+r_{11} & r_{12} & r_{13} \\
+r_{21} & r_{22} & r_{23} \\
+r_{31} & r_{32} & r_{33} \\
+\end{bmatrix}
+=
+\begin{bmatrix}[1.5]
+\cos(\kappa)\cos(\phi) &
+\cos(\phi)\sin(\kappa) &
+-\sin(\phi) \\
+\cos(\kappa)\sin(\omega)\sin(\phi) - \cos(\omega)\sin(\kappa) &
+\cos(\kappa)\cos(\omega) + \sin(\kappa)\sin(\omega)\sin(\phi) &
+\cos(\phi)\sin(\omega) \\
+\sin(\kappa)\sin(\omega) + \cos(\kappa)\cos(\omega)\sin(\phi) &
+\cos(\omega)\sin(\kappa)\sin(\phi) - \cos(\kappa)\sin(\omega) &
+\cos(\omega)\cos(\phi) \\
+\end{bmatrix}
+\]
 \begin{align*}
-x\cos(\kappa)\cos(\phi) +                                            y\cos(\phi)\sin(\kappa)                                          - z\sin(\phi) + t_x - X &= 0 \\
-- x(\cos(\omega)\sin(\kappa) - \cos(\kappa)\sin(\omega)\sin(\phi)) + y(\cos(\kappa)\cos(\omega) + \sin(\kappa)\sin(\omega)\sin(\phi)) + z\cos(\phi)\sin(\omega) + t_y - Y &= 0 \\
-x(\sin(\kappa)\sin(\omega) + \cos(\kappa)\cos(\omega)\sin(\phi)) -   y(\cos(\kappa)\sin(\omega) - \cos(\omega)\sin(\kappa)\sin(\phi)) + z\cos(\omega)\cos(\phi) +t_x - Z &= 0 
+&F: &r_{11}(x + v_x) + r_{12}(y + v_y) + r_{13}(z + v_z) + T_x - (X + v_X) = 0& \\
+&G: &r_{21}(x + v_x) + r_{22}(y + v_y) + r_{23}(z + v_z) + T_y - (Y + v_Y) = 0& \\
+&H: &r_{31}(x + v_x) + r_{32}(y + v_y) + r_{33}(z + v_z) + T_z - (Z + v_Z) = 0& \\
+\end{align*}
+
+\[
+J = \begin{bmatrix}[1.5]
+\ddx{F_m}{S} & \ddx{F_m}{\omega} & \ddx{F_m}{\phi} & \ddx{F_m}{\kappa} & \ddx{F_m}{T_x} & \ddx{F_m}{T_y} & \ddx{F_m}{T_z} \\
+\ddx{G_m}{S} & \ddx{G_m}{\omega} & \ddx{G_m}{\phi} & \ddx{G_m}{\kappa} & \ddx{G_m}{T_x} & \ddx{G_m}{T_y} & \ddx{G_m}{T_z} \\
+\ddx{H_m}{S} & \ddx{H_m}{\omega} & \ddx{H_m}{\phi} & \ddx{H_m}{\kappa} & \ddx{H_m}{T_x} & \ddx{H_m}{T_y} & \ddx{H_m}{T_z} \\
+\vdots & \vdots & \vdots& \vdots  & \vdots & \vdots& \vdots \\
+\ddx{F_m}{S} & \ddx{F_m}{\omega} & \ddx{F_m}{\phi} & \ddx{F_m}{\kappa} & \ddx{F_m}{T_x} & \ddx{F_m}{T_y} & \ddx{F_m}{T_z} \\
+\ddx{G_m}{S} & \ddx{G_m}{\omega} & \ddx{G_m}{\phi} & \ddx{G_m}{\kappa} & \ddx{G_m}{T_x} & \ddx{G_m}{T_y} & \ddx{G_m}{T_z} \\
+\ddx{H_m}{S} & \ddx{H_m}{\omega} & \ddx{H_m}{\phi} & \ddx{H_m}{\kappa} & \ddx{H_m}{T_x} & \ddx{H_m}{T_y} & \ddx{H_m}{T_z} \\
+\end{bmatrix}
+\hspace{1cm}
+\Delta X = 
+\begin{bmatrix}
+S \\
+\omega \\
+\phi \\
+\kappa \\
+T_x \\
+T_y \\
+T_z
+\end{bmatrix}
+\]
+\[
+b(r) = 
+\begin{bmatrix}[1.5]
+\ddx{F}{v_{xr}} & \ddx{F}{v_{yr}} & \ddx{F}{v_{zr}} & \ddx{F}{v_{Xr}} & \ddx{F}{v_{Yr}} & \ddx{F}{v_{Zr}} \\
+\ddx{G}{v_{xr}} & \ddx{G}{v_{yr}} & \ddx{G}{v_{zr}} & \ddx{G}{v_{Xr}} & \ddx{G}{v_{Yr}} & \ddx{G}{v_{Zr}} \\
+\ddx{H}{v_{xr}} & \ddx{H}{v_{yr}} & \ddx{H}{v_{zr}} & \ddx{H}{v_{Xr}} & \ddx{H}{v_{Yr}} & \ddx{H}{v_{Zr}}
+\end{bmatrix}
+\hspace{0.5cm}
+B = 
+\begin{bmatrix}
+b(1) & 0 & \dots & 0 \\
+0 & b(2) & \dots & 0 \\
+\vdots & \vdots & \ddots & \vdots \\
+0 & 0 & 0 & b(m) \\
+\end{bmatrix}
+\hspace{0.5cm}
+V = 
+\begin{bmatrix}
+v_{x_1} \\
+v_{y_1} \\
+v_{z_1} \\
+v_{X_1} \\
+v_{Y_1} \\
+v_{Z_1} \\
+v_{x_2} \\
+v_{y_2} \\
+v_{z_2} \\
+v_{X_2} \\
+v_{Y_2} \\
+v_{Z_2} \\
+\vdots \\
+v_{x_m} \\
+v_{y_m} \\
+v_{z_m} \\
+v_{X_m} \\
+v_{Y_m} \\
+v_{Z_m}
+\end{bmatrix}
+\]
+
+\begin{align*}
+\ddx{F}{S} &= x\cos(\phi)\cos(\kappa) - z\sin(\phi) + y\cos(\phi)\sin(\kappa)\\
+\ddx{F}{\omega} &= 0\\
+\ddx{F}{\phi} &= -S(z\cos(\phi) + x\cos(\kappa)\sin(\phi) + y\sin(\phi)\sin(\kappa))\\
+\ddx{F}{\kappa} &= \\
+\ddx{F}{T_x} &= \\
+\ddx{F}{T_y} &= \\
+\ddx{F}{T_z} &= \\
+\ddx{G}{S} &= \\
+\ddx{G}{\omega} &= \\
+\ddx{G}{\phi} &= \\
+\ddx{G}{\kappa} &= \\
+\ddx{G}{T_x} &= \\
+\ddx{G}{T_y} &= \\
+\ddx{G}{T_z} &= \\
+\ddx{H}{S} &= \\
+\ddx{H}{\omega} &= \\
+\ddx{H}{\phi} &= \\
+\ddx{H}{\kappa} &= \\
+\ddx{H}{T_x} &= \\
+\ddx{H}{T_y} &= \\
+\ddx{H}{T_z} &= 
 \end{align*}

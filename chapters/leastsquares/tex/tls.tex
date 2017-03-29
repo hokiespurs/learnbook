@@ -23,6 +23,12 @@ m = \text{number of observations} \hspace{1cm}
 n = \text{number of unknowns} \hspace{1cm}
 \]
 \[
+p = \text{number of observation equations for each observation}
+\]
+\[
+q = \text{number of input variables}
+\]
+\[
 dof = \text{degrees of freedom (\# of redundant observations)} = m-n
 \]
 \[
@@ -33,24 +39,21 @@ i = \text{loop iteration}
 \]
 \setcounter{MaxMatrixCols}{20}
 \[
+b(r) = 
+\begin{bmatrix}[1.5]
+\ddx{F_1}{v_{1r}} & \ddx{F_1}{v_{2r}} & \dots & \ddx{F_1}{v_{pr}} \\
+\ddx{F_2}{v_{1r}} & \ddx{F_2}{v_{2r}} & \dots & \ddx{F_2}{v_{pr}} \\
+\vdots & \vdots & \ddots & \vdots \\
+\ddx{F_k}{v_{1r}} & \ddx{F_k}{v_{2r}} & \dots & \ddx{F_k}{v_{pr}} \\
+
+\end{bmatrix}
+\hspace{0.5cm}
 B = 
 \begin{bmatrix}
-\ddx{F_1}{v_1} & \ddx{F_1}{v_2} & \dots & \ddx{F_1}{v_n} &
-0 & 0 & 0 & 0 & 
-\dots &
-0 & 0 & 0 & 0 \\
-
-0 & 0 & 0 & 0 & 
-\ddx{F_2}{v_1} & \ddx{F_2}{v_2} & \dots & \ddx{F_2}{v_n} &
-\dots &
-0 & 0 & 0 & 0 \\
-
-\vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots & \vdots & \vdots \\
-
-0 & 0 & 0 & 0 & 
-0 & 0 & 0 & 0 & 
-\dots &
-\ddx{F_m}{v_1} & \ddx{F_m}{v_2} & \dots & \ddx{F_m}{v_n} 
+b(1) & 0 & \dots & 0 \\
+0 & b(2) & \dots & 0 \\
+\vdots & \vdots & \ddots & \vdots \\
+0 & 0 & 0 & b(m) \\
 \end{bmatrix}
 \hspace{0.5cm}
 V = 
@@ -58,20 +61,20 @@ V =
 v_{11} \\
 v_{21} \\
 \vdots \\
-v_{n1} \\
+v_{p1} \\
 v_{12} \\
 v_{22} \\
 \vdots \\
-v_{n2} \\
+v_{p2} \\
 \vdots \\
 v_{1m} \\
 v_{2m} \\
 \vdots \\
-v_{nm}
+v_{pm}
 \end{bmatrix}
 \]
 \[
-J = \begin{bmatrix}
+J = \begin{bmatrix}[1.5]
 \ddx{F_1}{x_1} & \ddx{F_1}{x_2} & \dots & \ddx{F_1}{x_n} \\
 \ddx{F_2}{x_1} & \ddx{F_2}{x_2} & \dots & \ddx{F_2}{x_n} \\
 \vdots & \vdots & \ddots& \vdots \\
@@ -109,10 +112,10 @@ Loop until $\Delta X $ is small, or more robustly, loop until $S_0^2$ increases.
 	\text{Equivalent Weight} &=  W_{eq} = inv(B\Sigma B^T) \\
 	\text{Loop Delta Estimate} &= \Delta X = inv(J^TW_{eq}J)J^TW_{eq}K \\
 	\text{Loop Estimate} &=  \hat{X}_i = X_{i-1}+\Delta X \\
-	\text{Equivalent Residuals} &= V_{eq} = J\Delta \hat{X_i} - K \\
+	\text{Equivalent Residuals} &= V_{eq} = K_i \\
 	\text{Reference Variance} &= S_0^2 = \dfrac{V_{eq}^TW_{eq}V_{eq}}{dof}
 \end{align*}
-
+\todo{make sure V = K in all nonlinear}
 \subsubsection{Final Calculations}
 \begin{align*}
 	\text{Observation Residuals} &= V = \Sigma B^T W_{eq} V_{eq} \\
@@ -176,10 +179,10 @@ Solving for Partial Derivatives:
 \[
 B = 
 \begin{bmatrix}
-\ddx{F_1}{v_{x_1}} & \ddx{F_1}{v_{y_1}} & 0 & 0 & \dots & 0 & 0 \\
-0 & 0 & \ddx{F_2}{v_{x_2}} & \ddx{F_2}{v_{y_2}} &  \dots  & 0 & 0 \\
+\ddx{F}{v_{x_1}} & \ddx{F}{v_{y_1}} & 0 & 0 & \dots & 0 & 0 \\
+0 & 0 & \ddx{F}{v_{x_2}} & \ddx{F}{v_{y_2}} &  \dots  & 0 & 0 \\
 \vdots & \vdots & \vdots & \vdots & \ddots & 0 & 0 \\
-0 & 0 & 0 & 0 & 0 & \ddx{F_5}{v_{x_5}} & \ddx{F_5}{v_{y_5}} \\
+0 & 0 & 0 & 0 & 0 & \ddx{F}{v_{x_5}} & \ddx{F}{v_{y_5}} \\
 \end{bmatrix}
 =
 \begin{bmatrix}
@@ -271,4 +274,14 @@ lastline   = 34,
 firstnumber= 1
 ]{exampleTLS.m}
 
-Note: Matlab does not have a built in TLS function.
+Note: Matlab does not have a built in TLS function, but I wrote a function called LSRTLS.m
+
+\lstinputlisting[
+label      = {alg:exampleTLS2},
+caption    = {exampleTLS.m: Using lsrtls.m and anonymous function handles to perform TLS.},
+style      = Matlab-editor,
+basicstyle = \mlttfamily,
+firstline  = 36,
+lastline   = 40,
+firstnumber= 36
+]{exampleTLS.m}
