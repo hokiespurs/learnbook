@@ -357,7 +357,6 @@ To calculate the residual for each observation, user the following equations, wh
 
 \section{Robust and Resistant Regression}
 \textbf{Robust Regression} attempts to minimize the weight of outliers.  So instead of minimizing the square of the residuals (L2 Norm Regression aka Least Squares), one example would be to minimize the absolute value of the residuals (L1 Norm Regression aka Least Absolute Difference LAD).  This minimizes the impact of outliers, as their residuals are no longer squared.  A more sophisticated example would use "\textbf{Iterative Reweighted Least Squares}", where each point receives a new weight based on an equation for the residuals.
-\vspace{0.5cm}
 
 \noindent
 \textbf{Resistant Least Squares} attempts to remove the outlier observations altogether in an iterative manner.  
@@ -366,6 +365,5 @@ To calculate the residual for each observation, user the following equations, wh
 \noindent
 These methods are useful for datasets where there are likely outliers or blunders.
 
-\vspace{0.5cm}
 \noindent
 *I'm not going to go into too much detail on this right now, but this link seems like a good resource for more a more detailed description: https://onlinecourses.science.psu.edu/stat501/node/353

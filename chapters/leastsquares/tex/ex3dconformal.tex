@@ -1,7 +1,7 @@
 \section{Example: 3D Conformal Transformation with TLS}
 Solve the 3D Conformal (7-parameter Helmert) Transformation given the following correspondences and covariance matrix.
 
-Using the observation equations:
+Using the observation equations with the Tait-Bryan Rotation Matrix Convention:
 \[
 R = 
 \begin{bmatrix}
@@ -49,6 +49,20 @@ T_x \\
 T_y \\
 T_z
 \end{bmatrix}
+\hspace{0.5cm}
+K_i = 
+\begin{bmatrix}
+0 - F_1(X_i) \\
+0 - G_1(X_i) \\
+0 - H_1(X_i) \\
+0 - F_2(X_i) \\
+0 - G_2(X_i) \\
+0 - H_2(X_i) \\
+ \vdots \\
+0 - F_m(X_i) \\
+0 - G_m(X_i) \\
+0 - H_m(X_i)
+\end{bmatrix}
 \]
 \[
 b(r) = 
@@ -89,27 +103,87 @@ v_{Y_m} \\
 v_{Z_m}
 \end{bmatrix}
 \]
-
+\subsection{J Partial Derivatives}
 \begin{align*}
-\ddx{F}{S} &= x\cos(\phi)\cos(\kappa) - z\sin(\phi) + y\cos(\phi)\sin(\kappa)\\
-\ddx{F}{\omega} &= 0\\
-\ddx{F}{\phi} &= -S(z\cos(\phi) + x\cos(\kappa)\sin(\phi) + y\sin(\phi)\sin(\kappa))\\
-\ddx{F}{\kappa} &= \\
-\ddx{F}{T_x} &= \\
-\ddx{F}{T_y} &= \\
-\ddx{F}{T_z} &= \\
-\ddx{G}{S} &= \\
-\ddx{G}{\omega} &= \\
-\ddx{G}{\phi} &= \\
-\ddx{G}{\kappa} &= \\
-\ddx{G}{T_x} &= \\
-\ddx{G}{T_y} &= \\
-\ddx{G}{T_z} &= \\
-\ddx{H}{S} &= \\
-\ddx{H}{\omega} &= \\
-\ddx{H}{\phi} &= \\
-\ddx{H}{\kappa} &= \\
-\ddx{H}{T_x} &= \\
-\ddx{H}{T_y} &= \\
-\ddx{H}{T_z} &= 
+\ddx{F}{S} &= x\cos(\phi)\cos(\kappa) - z\sin(\phi) + y\cos(\phi)\sin(\kappa)\\[0.5ex]
+\ddx{F}{\omega} &= 0\\[0.5ex]
+\ddx{F}{\phi} &= -S(z\cos(\phi) + x\cos(\kappa)\sin(\phi) + y\sin(\phi)\sin(\kappa))\\[0.5ex]
+\ddx{F}{\kappa} &= S\cos(\phi)(y\cos(\kappa) - x\sin(\kappa))\\[0.5ex]
+\ddx{F}{T_x} &= 1\\[0.5ex]
+\ddx{F}{T_y} &= 0\\[0.5ex]
+\ddx{F}{T_z} &= 0\\[0.5ex]
+\ddx{G}{S} &= y(\cos(\omega)\cos(\kappa) + \sin(\omega)\sin(\phi)\sin(\kappa)) - x(\cos(\omega)\sin(\kappa) - \cos(\kappa)\sin(\omega)\sin(\phi)) + z\cos(\phi)\sin(\omega)\\[0.5ex]
+\ddx{G}{\omega} &= Sx(\sin(\omega)\sin(\kappa) + \cos(\omega)\cos(\kappa)\sin(\phi)) - Sy(\cos(\kappa)\sin(\omega) - \cos(\omega)\sin(\phi)\sin(\kappa)) + Sz\cos(\omega)\cos(\phi)\\[0.5ex]
+\ddx{G}{\phi} &= S\sin(\omega)(x\cos(\phi)\cos(\kappa) - z\sin(\phi) + y\cos(\phi)\sin(\kappa))\\[0.5ex]
+\ddx{G}{\kappa} &= - Sx(\cos(\omega)\cos(\kappa) + \sin(\omega)\sin(\phi)\sin(\kappa)) - Sy(\cos(\omega)\sin(\kappa) - \cos(\kappa)\sin(\omega)\sin(\phi))\\[0.5ex]
+\ddx{G}{T_x} &= 0\\[0.5ex]
+\ddx{G}{T_y} &= 1\\[0.5ex]
+\ddx{G}{T_z} &= 0\\[0.5ex]
+\ddx{H}{S} &= x(\sin(\omega)\sin(\kappa) + \cos(\omega)\cos(\kappa)\sin(\phi)) - y(\cos(\kappa)\sin(\omega) - \cos(\omega)\sin(\phi)\sin(\kappa)) + z\cos(\omega)\cos(\phi)\\[0.5ex]
+\ddx{H}{\omega} &= Sx(\cos(\omega)\sin(\kappa) - \cos(\kappa)\sin(\omega)\sin(\phi)) - Sy(\cos(\omega)\cos(\kappa) + \sin(\omega)\sin(\phi)\sin(\kappa)) - Sz\cos(\phi)\sin(\omega)\\[0.5ex]
+\ddx{H}{\phi} &= S\cos(\omega)(x\cos(\phi)\cos(\kappa) - z\sin(\phi) + y\cos(\phi)\sin(\kappa))\\[0.5ex]
+\ddx{H}{\kappa} &= Sx(\cos(\kappa)\sin(\omega) - \cos(\omega)\sin(\phi)\sin(\kappa)) + Sy(\sin(\omega)\sin(\kappa) + \cos(\omega)\cos(\kappa)\sin(\phi))\\[0.5ex]
+\ddx{H}{T_x} &= 0\\[0.5ex]
+\ddx{H}{T_y} &= 0\\[0.5ex]
+\ddx{H}{T_z} &= 1
 \end{align*}
+\clearpage
+\subsection{B Partial Derivatives}
+\begin{align*}
+\ddx{F}{v_{xr}} &= S\cos(\phi)\cos(\kappa) \\[0.4ex]
+\ddx{F}{v_{yr}} &= S\cos(\phi)\sin(\kappa) \\[0.4ex]
+\ddx{F}{v_{zr}} &= -S\sin(\phi) \\[0.4ex]
+\ddx{F}{v_{Xr}} &= -1 \\[0.4ex]
+\ddx{F}{v_{Yr}} &= 0 \\[0.4ex]
+\ddx{F}{v_{Zr}} &= 0 \\[0.4ex]
+\ddx{G}{v_{xr}} &= S\cos(\kappa)\sin(\omega)\sin(\phi) - S\cos(\omega)\sin(\kappa) \\[0.4ex]
+\ddx{G}{v_{yr}} &= S(\cos(\omega)\cos(\kappa) + \sin(\omega)\sin(\phi)\sin(\kappa)) \\[0.4ex]
+\ddx{G}{v_{zr}} &= S\cos(\phi)\sin(\omega) \\[0.4ex]
+\ddx{G}{v_{Xr}} &= 0 \\[0.4ex]
+\ddx{G}{v_{Yr}} &= -1 \\[0.4ex]
+\ddx{G}{v_{Zr}} &= 0 \\[0.4ex]
+\ddx{H}{v_{xr}} &= S(\sin(\omega)\sin(\kappa) + \cos(\omega)\cos(\kappa)\sin(\phi)) \\[0.4ex]
+\ddx{H}{v_{yr}} &= S\cos(\omega)\sin(\phi)\sin(\kappa) - S\cos(\kappa)\sin(\omega) \\[0.4ex]
+\ddx{H}{v_{zr}} &= S\cos(\omega)\cos(\phi) \\[0.4ex]
+\ddx{H}{v_{Xr}} &= 0 \\[0.4ex]
+\ddx{H}{v_{Yr}} &= 0 \\[0.4ex]
+\ddx{H}{v_{Zr}} &= -1 
+\end{align*}
+\subsection{K Values}
+\begin{align*}
+0-F_1(X_i) &= X_1 - tx_i + S_i z_1\sin(\phi_i) - S_i x_1 \cos(\phi_i)\cos(\kappa_i) - S_i y_1 \cos(\phi_i)\sin(\kappa_i) \\
+0-G_1(X_i) &= Y_1 - ty_i + S_i x_1(\cos(\omega_i)\sin(\kappa_i) - \cos(\kappa_i)\sin(\omega_i)\sin(\phi_i))  \\
+&\hspace{2cm} - S_i y_1 (\cos(\omega_i)\cos(\kappa_i) + \sin(\omega_i)\sin(\phi_i)\sin(\kappa_i)) - S_i z_1 \cos(\phi_i)\sin(\omega_i) \\
+0-H_1(X_i) &= Z_1 - tz_i - S_i x_1(\sin(\omega_i)\sin(\kappa_i) + \cos(\omega_i)\cos(\kappa_i)\sin(\phi_i)) \\
+&\hspace{2cm}+ S_i y_1 (\cos(\kappa_i)\sin(\omega_i) - \cos(\omega_i)\sin(\phi_i)\sin(\kappa_i)) - S_i z_1 \cos(\omega_i)\cos(\phi_i) \\
+\end{align*}
+\clearpage
+\subsection{If Needed: Calculate Initial Estimate}
+Good reference: https://www.researchgate.net/publication/228608056\_3-D\_Coordinate\_Transformations
+\vspace{0.5cm}
+
+\noindent
+\textbf{1. Estimate scale using the standard deviation of the distance from each point to the centroid}
+\[
+S_0 = \dfrac{std(\sqrt{(x-\bar{x})^2+(y-\bar{y})^2+(z-\bar{z})^2})}{std(\sqrt{(X-\bar{X})^2+(Y-\bar{Y})^2+(Z-\bar{Z})^2})} \\
+\]
+\vspace{0.5cm}
+
+\noindent
+\textbf{2. Pick 3 random corresponding points and estimate the rotation matrix between them}
+
+\vspace{0.5cm}
+
+\noindent
+\textbf{3. Apply the estimated rotation matrix to the coordinates and calculate the change in centroid}
+
+\subsection{Matlab Example}
+\lstinputlisting[
+label      = {alg:examplelsrnlin},
+caption    = {example3Dconformal.m: See the full m file for J,B, and K functions},
+style      = Matlab-editor,
+basicstyle = \mlttfamily,
+firstline  = 1,
+lastline   = 36,
+firstnumber= 1
+]{example3Dconformal.m}

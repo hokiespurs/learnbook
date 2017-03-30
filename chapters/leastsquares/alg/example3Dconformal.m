@@ -20,7 +20,6 @@ w(3:6:end)=sz;
 w(4:6:end)=sX;
 w(5:6:end)=sY;
 w(6:6:end)=sZ;
-
 s = diag(w.^2); %square because std -> var for covariance matrix
 
 Xo = calcXoEst(x,y,z,X,Y,Z); %calculate initial guess

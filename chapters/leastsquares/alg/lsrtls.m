@@ -75,6 +75,9 @@ lsrinfo.stdX = sqrt(diag(lsrinfo.Sx));  % std of solved unknowns
 lsrinfo.Lhat = J * X;                   % predicted L values
 lsrinfo.RMSE = sqrt(Veq'*Veq/m);        % RMSE
 
+lsrinfo.m = m;
+lsrinfo.n = n;
+lsrinfo.dof = dof;
 %% Handle Output Variables
 X = lsrinfo.X;   % unknowns
 Sx = lsrinfo.Sx; % covariance of unknowns
