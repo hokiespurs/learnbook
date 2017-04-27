@@ -35,7 +35,7 @@ Kfun = @(Xi)conformal3DKfun(Xi(1),Xi(2),Xi(3),Xi(4),Xi(5),Xi(6),Xi(7),...
 
 [X1,Sx1,lsainfo1] = lsrtls(Jfun,Kfun,Bfun,Xo,s);
 %% example with scale locked to 0.95
-myS = 0.9499549354;
+myS = 0.95;
 Xo(1)=[];
 Jfun = @(Xi)conformal3DJfun(myS,Xi(1),Xi(2),Xi(3),Xi(4),Xi(5),Xi(6),...
                             x,y,z,X,Y,Z,logical([0 1 1 1 1 1 1]));
@@ -166,4 +166,17 @@ qh = cross(ah,ph);
 
 R = [qh;ah;ph];
 
+end
+
+function symbolicKJBequations
+%%
+syms x y z X Y Z
+invars = [x y z X Y Z];
+syms S rx ry rz tx ty tz
+outvars = [S rx ry rz tx ty tz];
+
+R = RPY2DCM(rx,ry,rz);
+Eqs = [X;Y;Z] - (S * R * [x;y;z] + [tx;ty;tz]);
+
+[J,B,K]=calcKJBequations(Eqs,invars,outvars);
 end

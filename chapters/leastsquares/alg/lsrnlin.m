@@ -1,16 +1,32 @@
 function [X,Sx,lsrinfo] = lsrnlin(Jfun,Kfun,Xo,s)
-%% LSRNLIN solves linear least squares adjustment with optional weights
+% LSRNLIN Solves Nonlinear Least Squares with an optional stochastic model
+%   Solve a nonlinear least squares problem defined by JX = K
+%   J is the partial derivative wrt each unknown variable X
+%   K is the residual of each observation equation
+%   X are the unknown variables (Somtimes refered to as Beta)
 %
-% Input
-% Jfun : jacobian
-% Kfun : l-F(x)
-% Xo : initial guess
-% s: optional stochastic model: vector of weights or matrix of covariances
-%
-% Output
-% X
-% Sx
-% lsainfo : extra output parameters
+% Inputs:
+%   - Jfun : fun : Function which takes X as input, returns Jacobian Matrix
+%   - Kfun : fun : Function which takes X as input, returns K Matrix
+%   - Xo   : Mx1 : Initial Guess at unknown X variables
+%   - s    : NxN : Optional Stochastic Model 
+%                  *either a)vector of weights b)matrix of covariances
+% 
+% Outputs:
+%   - X       :   Mx1  : Most probably values for X variables
+%   - Sx      :   MxM  : Covariance Matrix for X variables
+%   - lsrinfo : struct : Structure with extra least squares info
+% 
+% Dependencies:
+%   - n/a
+% 
+% Toolboxes Required:
+%   - n/a
+% 
+% Author        : Richie Slocum    
+% Email         : richie@cormorantanalytics.com    
+% Date Created  : 17-Mar-2017    
+% Date Modified : 15-Apr-2017    
 %% inputs
 lsrinfo.inputs.Jfun = Jfun;
 lsrinfo.inputs.Kfun = Kfun;

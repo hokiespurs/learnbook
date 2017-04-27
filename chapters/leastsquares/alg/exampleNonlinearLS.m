@@ -45,8 +45,9 @@ stdX_b = sqrt(diag(Sx_b));      % std of solved unknowns     w/ So2 = 1
 %% Using Matlab Built in Function NLINFIT
 beta0 = [1.5; 1];
 modelfun = @(b,x)(b(1)*sin(2*pi/2*x+b(2)));
+options.Display = 'iter';
 [mat_X,mat_V,mat_J,mat_Sx,mat_So2,ErrorModelInfo] = ...
-    nlinfit(t,y,modelfun,beta0,'Weights',1./stdy.^2);
+    nlinfit(t,y,modelfun,beta0,options,'Weights',1./stdy.^2);
 
 %% Example Using LSRNLIN
 Jfun = @(X)([sin(2*pi/2.*t + X(2)) X(1)*cos(2*pi/2.*t + X(2))]);

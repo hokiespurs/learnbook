@@ -1,18 +1,35 @@
 function [X,Sx,lsrinfo] = lsrtls(Jfun,Kfun,Bfun,Xo,s)
-%% LSRNLIN solves linear least squares adjustment with optional weights
+% LSRTLS Solves Total Least Squares with an optional stochastic model
+%   Solve a total least squares problem defined by BV + JX = K
+%   B is the partial derivative with respect to each input variable
+%   V is the residuals wrt each input variable
+%   J is the partial derivative with respect to each unknown variable X
+%   K is the residual of each observation equation
+%   X are the unknown variables (Somtimes refered to as Beta)
 %
-% Input
-% Jfun : jacobian
-% Kfun : l-F(x)
-% Bfun : Jacobian wrt residuals
-% Xo : initial guess
-% s: optional stochastic model: vector of weights or matrix of covariances
-%
-% Output
-% X  
-% Sx 
-% lsainfo : extra output parameters
-
+% Inputs:
+%   - Jfun : fun : Function which takes X as input, returns Jacobian Matrix
+%   - Kfun : fun : Function which takes X as input, returns K Matrix
+%   - Bfun : fun : Function which takes X as input, returns B Matrix
+%   - Xo   : Mx1 : Initial Guess at unknown X variables
+%   - s    : NxN : Optional Stochastic Model 
+%                  *either a)vector of weights b)matrix of covariances
+% 
+% Outputs:
+%   - X       :   Mx1  : Most probably values for X variables
+%   - Sx      :   MxM  : Covariance Matrix for X variables
+%   - lsrinfo : struct : Structure with extra least squares info
+% 
+% Dependencies:
+%   - n/a
+% 
+% Toolboxes Required:
+%   - n/a
+% 
+% Author        : Richie Slocum    
+% Email         : richie@cormorantanalytics.com    
+% Date Created  : March 17, 2017    
+% Date Modified : April 15, 2017    
 %% inputs
 lsrinfo.inputs.Jfun = Jfun;
 lsrinfo.inputs.Kfun = Kfun;
