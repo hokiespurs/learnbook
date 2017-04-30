@@ -23,7 +23,7 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,modelfun,betacoef0,var
 %   - 'AnalyticalBfunction'  : [empty] (default), optional Bfun(beta,x)
 %   - 'noscale'              : scale covariance...false (default), true 
 %   - 'beta0Covariance'      : [empty] (default), (m x m) covariance
-%% Parse Inputs
+%% PARSE INPUTS
 p = inputParser;
 % default values
 defaultType = 'nonlinear';
@@ -65,7 +65,7 @@ hline = repmat('-',1,50);
 if ismember(p.Results.type,expectedType(1:5))
     ErrorModelInfo.meta.type = 'linear';
     if isverbose
-       fprintf('Performing Linear Least Squares\n%s\n',hline); 
+       fprintf('\n%s\nPerforming Linear Least Squares\n%s\n',hline,hline); 
     end
     islinear = true;
     isnonlinear = false;
@@ -73,19 +73,19 @@ if ismember(p.Results.type,expectedType(1:5))
 elseif ismember(p.Results.type,expectedType(6:7))
     ErrorModelInfo.meta.type = 'nonlinear';
     if isverbose
-       fprintf('Performing NonLinear Least Squares\n%s\n',hline); 
-    end
-    islinear = true;
-    isnonlinear = false;
-    istls = false;
-else
-    ErrorModelInfo.meta.type = 'total';
-    if isverbose
-       fprintf('Performing Total Least Squares\n%s\n',hline); 
+       fprintf('\n%s\nPerforming NonLinear Least Squares\n%s\n',hline,hline); 
     end
     islinear = false;
     isnonlinear = true;
     istls = false;
+else
+    ErrorModelInfo.meta.type = 'total';
+    if isverbose
+       fprintf('\n%s\nPerforming Total Least Squares\n%s\n',hline,hline); 
+    end
+    islinear = false;
+    isnonlinear = false;
+    istls = true;
 end
 %% Make sure y matrix is ok
 if size(y,2)~=1
@@ -168,12 +168,12 @@ if isnonlinear || istls
     if ismember('analyticalJ',p.UsingDefaults)
         ErrorModelInfo.meta.Jtype = 'numerical';
         if isverbose
-            fprintf('Jacobian Function: Numerical');
+            fprintf('Jacobian Function: Numerical\n');
         end
     else
         ErrorModelInfo.meta.Jtype = 'analytical';
         if isverbose
-            fprintf('Jacobian Function: Analytical');
+            fprintf('Jacobian Function: Analytical\n');
         end
     end
     Jfun = p.Results.analyticalJ;
@@ -184,10 +184,10 @@ if isnonlinear || istls
            error('J*beta should return the same size as the response(y)');
        end
     catch Jerr
-        if ErrorModelInfo.meta.Jtype == 'analytical'
-            fprintf('J Function throws an error\n');
-        else
+        if ismember('analyticalJ',p.UsingDefaults) %default value
             fprintf('Calculating Jacobian of Modelfun throws an error\n');
+        else
+            fprintf('J Function throws an error\n');
         end
         rethrow(Jerr);
     end
@@ -197,26 +197,26 @@ if istls
     if ismember('analyticalB',p.UsingDefaults)
         ErrorModelInfo.meta.Btype = 'numerical';
         if isverbose
-            fprintf('B Function: Numerical');
+            fprintf('B Function: Numerical\n');
         end
     else
         ErrorModelInfo.meta.Btype = 'analytical';
         if isverbose
-            fprintf('B Function: Analytical');
+            fprintf('B Function: Analytical\n');
         end
     end
     Bfun = p.Results.analyticalB;
     % make sure the function works
     try
        foo=Bfun(betacoef0,x)*x(:);
-       if sum(size(foo,1)~=size(y))>0
+       if sum(size(foo)~=size(y))>0
            error('B function*x(:) should return the same size as the response(y)');
        end
     catch Berr
-        if ErrorModelInfo.meta.Btype == 'analytical'
-            fprintf('B Function throws an error\n');
-        else
+        if ismember('analyticalB',p.UsingDefaults) %default value
             fprintf('Calculating B function of Modelfun throws an error\n');
+        else
+            fprintf('B Function throws an error\n');
         end
         rethrow(Berr);
     end
@@ -227,54 +227,77 @@ if ~issymmetric(betacoefcov) || size(betacoefcov,1)~=numel(betacoef0)
     error('beta0covariance must be a valid covariance matrix with size [%.0f x %.0f)',...
         nBetacoef,nBetacoef);
 end
-%% Maximum Iterations In Nonlinear least Squares
-maxiter = p.Results.maxiter;
-%% Calculate NonLinear Least Squares
-betacoef = betacoef0;                  % set first guess at unknowns
+%% DO LEAST SQUARES
+if islinear
+%% Calculate Linear Least Squares
 
-%initialize while loop parameters
-So2 = inf;
-dSo2 = 1;
-iter = 0;
-if isverbose
-fprintf('iter :        So2'); %
-fprintf('          betacoef(%.0f)',1:nBetacoef);
-fprintf('\n');
-end
-while dSo2>0 && iter<maxiter %loop until So2 increases or exceed 100 iteration
-    J = calcJ(modelfun,betacoef,x);
-    K = calcK(modelfun,betacoef,x,y);
-    dbetacoef = (J'*W*J)\J'*W*K;       % Loop Delta Estimate
-    betacoef = betacoef + dbetacoef;                 % Loop Estimate
-    V = K;                      % Residuals
-    dSo2 = So2 - V'*W*V/dof;    % Change in Reference Variance
-    So2 = (V'*W*V)/dof;         % Reference Variance
-    iter = iter + 1;
+else
+%% Calculate NonLinear Least Squares and TLS
+    maxiter = p.Results.maxiter;
+    betacoef = betacoef0;                  % set first guess at unknowns
 
-    % print status to screen
+    %initialize while loop parameters
+    So2 = inf;
+    dSo2 = 1;
+    iter = 0;
     if isverbose
-        fprintf('%3.0f : ',iter);
-        fprintf('%20.10f', So2);
-        fprintf('%20.10f', betacoef);
+        fprintf('iter :        So2        '); %
+        fprintf('         betacoef(%.0f)',1:nBetacoef);
         fprintf('\n');
     end
+    while dSo2>0 && iter<maxiter %loop until So2 increases or exceed 100 iteration
+        J = Jfun(betacoef,x);
+        K = calcK(modelfun,betacoef,x,y);
+        if istls
+            B = Bfun(betacoef,x);
+            W = inv(B*covX*B');            %equivalent weight matrix
+        else
+            W = inv(covY);
+        end
+        dbetacoef = (J'*W*J)\J'*W*K;       % Loop Delta Estimate
+        betacoef = betacoef + dbetacoef;   % Loop Estimate
+        V = K;                             % Residuals
+        dSo2 = So2 - V'*W*V/dof;           % Change in Reference Variance
+        So2 = (V'*W*V)/dof;                % Reference Variance
+        iter = iter + 1;
+        % print status to screen
+        if isverbose
+            fprintf('%3.0f : ',iter);
+            fprintf('%20.10f', So2);
+            fprintf('%20.10f', betacoef);
+            fprintf('\n');
+        end        
+    end
+    ErrorModelInfo.betacoef = betacoef;
+    ErrorModelInfo.R = V;
+    if istls
+       ErrorModelInfo.Robs = covX * B' * W * V; 
+    end
+    ErrorModelInfo.MSE = So2;
+    ErrorModelInfo.iter = iter;
+    
+    ErrorModelInfo.Q = inv(J'*W*J);              % cofactor
+    if p.Results.noscale
+       if isverbose
+           fprintf('Covariance is not scaled\n');
+       end
+       ErrorModelInfo.covB = inv(J'*W*J);
+    else
+       if isverbose
+           fprintf('Covariance is scaled\n');
+       end
+       ErrorModelInfo.covB = So2*inv(J'*W*J);
+    end
+    ErrorModelInfo.Sl = J * ErrorModelInfo.covB * J'; % covariance of observations
+    ErrorModelInfo.stdX = sqrt(diag(ErrorModelInfo.covB));  % std of solved unknowns
+    ErrorModelInfo.Lhat = J * betacoef;                   % predicted L values
+    ErrorModelInfo.RMSE = sqrt(V'*V/nObsEqns);        % RMSE
+    % handle output variables
+    R = V;
+    MSE = So2;
+    CovB = ErrorModelInfo.covB;
 end
-ErrorModelInfo.X = betacoef;                          % Unknowns
-ErrorModelInfo.V = V;                          % Residuals
-ErrorModelInfo.So2 = So2;                      % Reference Variance
-ErrorModelInfo.iter = iter;                    % total iterations
 
-ErrorModelInfo.Q = inv(J'*W*J);                % cofactor
-ErrorModelInfo.Sx = So2 * ErrorModelInfo.Q;           % covariance of unknowns
-ErrorModelInfo.Sl = J * ErrorModelInfo.Sx * J';       % covariance of observations
-ErrorModelInfo.stdX = sqrt(diag(ErrorModelInfo.Sx));  % std of solved unknowns
-ErrorModelInfo.Lhat = J * betacoef;                   % predicted L values
-ErrorModelInfo.RMSE = sqrt(V'*V/nObsEqns);            % RMSE
-%% Handle Output Variables
-betacoef = ErrorModelInfo.X;   % unknowns
-CovB = ErrorModelInfo.Sx; % covariance of unknowns
-R = V;
-MSE = So2;
 end
 
 function J = calcJ(modelfun,betacoef,x)
