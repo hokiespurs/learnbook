@@ -1,14 +1,14 @@
-function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,modelfun,betacoef0,varargin)
+function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,modelfun,varargin)
 % LSR 
 % Inputs:
 %   - x              : Predictor variables
 %   - y              : Response values
 %   - modelfun       : Model function handle @modelfun(betacoef,X)
-%   - betacoef0          : Initial coefficient values
+%   - betacoef0      : Initial coefficient values
 %   - options        : Structure with optional parameters
 % 
 % Outputs:
-%   - betacoef           : Estimated regression coefficients
+%   - betacoef       : Estimated regression coefficients
 %   - R              : Residuals
 %   - J              : Jacobian
 %   - CovB           : Estimated Variance Covariance Matrix
@@ -23,6 +23,8 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,modelfun,betacoef0,var
 %   - 'AnalyticalBfunction'  : [empty] (default), optional Bfun(beta,x)
 %   - 'noscale'              : scale covariance...false (default), true 
 %   - 'beta0Covariance'      : [empty] (default), (m x m) covariance
+%   - 'betacoef0asObs'       : false (default), option to use guess in modelfun
+%   - 'chi2alpha'            : 0.05 (default), alpha value for confidence
 %% PARSE INPUTS
 p = inputParser;
 % default values
@@ -34,10 +36,13 @@ defaultnoscale = false;
 defaultBeta0Cov = [];
 defaultVerbose = false;
 defaultMaxIter = 100;
+defaultBetacoefAsObs = false;
+defaultchi2 = 0.05;
 % expected options
 expectedType = {'ols','wls','gls','lin','linear',...
     'nlin','nonlinear',...
-    'total','tls'};
+    'total','tls',...
+    'robust'};
 % add input validation
 isfunction = @(x)(isa(x,'function_handle'));
 
@@ -55,7 +60,8 @@ addParameter(p,'noscale',defaultnoscale,@islogical)
 addParameter(p,'beta0covariance',defaultBeta0Cov,@isnumeric)
 addParameter(p,'verbose',defaultVerbose);
 addParameter(p,'maxiter',defaultMaxIter,@(x)(isscalar(x) & isnumeric(x)));
-
+addParameter(p,'betacoef0asObs',defaultBetacoefAsObs,@islogical);
+addParameter(p,'chi2alpha',defaultchi2,@(x)(isscalar(x) & isnumeric(x)));
 parse(p,x,y,modelfun,varargin{:});
 %% Check Input Logic
 %% Determine Level of output to screen
@@ -118,7 +124,7 @@ end
 if isempty(p.Results.stochastic) %default to identity matrix
     ErrorModelInfo.meta.stochastic = 'N/A';
     if isverbose
-        fprintf('Stochastic Model: N/A\n');
+        fprintf('Stochastic Model : N/A\n');
     end
     if istls
         covX = eye(nPredictors);
@@ -128,7 +134,7 @@ if isempty(p.Results.stochastic) %default to identity matrix
 elseif isvector(p.Results.stochastic) %weight for each observation equation
     ErrorModelInfo.meta.stochastic = 'Weight Vector';
     if isverbose
-       fprintf('Stochastic Model: Weight Vector\n'); 
+       fprintf('Stochastic Model : Weight Vector\n'); 
     end
     if istls
         error('stochastic input must be a covariance matrix when doing tls, cant be a vector');
@@ -140,7 +146,7 @@ elseif isvector(p.Results.stochastic) %weight for each observation equation
 else % user input is covariance
     ErrorModelInfo.meta.stochastic = 'Covariance';
     if isverbose
-       fprintf('Stochastic Model: Covariance\n'); 
+       fprintf('Stochastic Model : Covariance\n'); 
     end
     if istls
         covX = p.Results.stochastic;
@@ -197,12 +203,12 @@ if istls
     if ismember('analyticalB',p.UsingDefaults)
         ErrorModelInfo.meta.Btype = 'numerical';
         if isverbose
-            fprintf('B Function: Numerical\n');
+            fprintf('B Function       : Numerical\n');
         end
     else
         ErrorModelInfo.meta.Btype = 'analytical';
         if isverbose
-            fprintf('B Function: Analytical\n');
+            fprintf('B Function       : Analytical\n');
         end
     end
     Bfun = p.Results.analyticalB;
@@ -222,38 +228,121 @@ if istls
     end
 end
 %% test Beta Covariance
+betacoef0asobs = p.Results.betacoef0asObs;
 betacoefcov = p.Results.beta0covariance;
-if ~issymmetric(betacoefcov) || size(betacoefcov,1)~=numel(betacoef0)
-    error('beta0covariance must be a valid covariance matrix with size [%.0f x %.0f)',...
-        nBetacoef,nBetacoef);
+if ~isempty(betacoefcov) 
+    betacoef0asobs = true;
+    if isempty(p.Results.betacoef0) % covariance but no initial guess
+        error('Need to input beta coefficients to add as observation equations with the input covariance');
+    end
+    if ~issymmetric(betacoefcov) || size(betacoefcov,1)~=nBetacoef
+        error('beta0covariance must be a valid covariance matrix with size [%.0f x %.0f)',...
+            nBetacoef,nBetacoef);
+    end
+else
+    betacoefcov = eye(nBetacoef);
+end
+%% Checks for betacoef0 as observations
+if betacoef0asobs && isempty(betacoefcov) && ~isempty(p.Results.stochastic)
+   error('When stochastic input, betacoefasObs = true, need betacoef0covariance');
+elseif betacoef0asobs && ~isempty(betacoefcov) && isempty(p.Results.stochastic)
+   error('When stochastic not input, betacoefasObs = true, cant have betacoef0covariance because itd be weighting everything else as 1, and the beta0covariacne differently');
+elseif islinear && isempty(p.Results.betacoef0) && betacoef0asobs
+    error('Need to input betacoef0 in order to use it as an observation');
+elseif islinear && ~betacoef0asobs && ~isempty(p.Results.betacoef0)
+    warning('betacoef0 isnt doing anything for this linear least squares solution, use betacoef0asobs to include it');
 end
 %% DO LEAST SQUARES
 if islinear
 %% Calculate Linear Least Squares
+A = calcJ(modelfun,zeros(nBetacoef,1),x);
+L = y;
 
+if betacoef0asobs %add betacoef0 as observation equations
+    if isverbose
+       fprintf('Using betacoef0 as observation equations: yes\n'); 
+    end
+    
+    L(end+1:end+nBetacoef)=p.Results.betacoef0;
+    A = [A;eye(nBetacoef)];
+    covY = blkdiag(covY,betacoefcov);
+else
+    if isverbose
+       fprintf('Using betacoef0 as observation equations: no\n'); 
+    end    
+end
+
+W = inv(covY);
+
+betacoef = (A'*W*A)\A'*W*L;     % unknowns
+V = A * betacoef - L;           % residuals
+So2 = V'*W*V/dof;               % Reference Variance
+ErrorModelInfo.betacoef = betacoef;
+ErrorModelInfo.V = V;
+ErrorModelInfo.MSE = So2;
+ErrorModelInfo.Q = inv(A'*W*A);              % cofactor
+if isverbose
+    fprintf('So2=%.4f\n',So2);
+end
+if p.Results.noscale %force it not to scale covariance
+    if isverbose
+        fprintf('Covariance is not scaled\n');
+    end
+    ErrorModelInfo.covB = inv(A'*W*A);
+else
+    if isverbose
+        fprintf('Covariance is scaled\n');
+    end
+    ErrorModelInfo.covB = So2*inv(A'*W*A);
+end
+ErrorModelInfo.Sl = A * ErrorModelInfo.covB * A'; % covariance of observations
+ErrorModelInfo.stdX = sqrt(diag(ErrorModelInfo.covB));  % std of solved unknowns
+ErrorModelInfo.Lhat = A * betacoef;                   % predicted L values
+ErrorModelInfo.RMSE = sqrt(V'*V/nObsEqns);        % RMSE
+ErrorModelInfo.r2 = var(ErrorModelInfo.Lhat)/var(L);  % R^2 Skill
+% handle output variables
+R = V;
+MSE = So2;
+CovB = ErrorModelInfo.covB;
+J = A;
 else
 %% Calculate NonLinear Least Squares and TLS
     maxiter = p.Results.maxiter;
     betacoef = betacoef0;                  % set first guess at unknowns
-
+    if isverbose
+        if betacoef0asobs
+       fprintf('Using betacoef0 as observation equations: yes\n'); 
+        else
+       fprintf('Using betacoef0 as observation equations: no\n'); 
+        end        
+    end
     %initialize while loop parameters
     So2 = inf;
     dSo2 = 1;
     iter = 0;
     if isverbose
-        fprintf('iter :        So2        '); %
+        fprintf('\niter :        So2        '); %
         fprintf('         betacoef(%.0f)',1:nBetacoef);
         fprintf('\n');
     end
     while dSo2>0 && iter<maxiter %loop until So2 increases or exceed 100 iteration
-        J = Jfun(betacoef,x);
-        K = calcK(modelfun,betacoef,x,y);
-        if istls
-            B = Bfun(betacoef,x);
-            W = inv(B*covX*B');            %equivalent weight matrix
-        else
-            W = inv(covY);
-        end
+            J = Jfun(betacoef,x);
+            K = calcK(modelfun,betacoef,x,y);
+            if istls
+                B = Bfun(betacoef,x);
+                W = inv(B*covX*B');            %equivalent weight matrix
+            else
+                W = inv(covY);
+            end
+            
+            if betacoef0asobs
+                if istls
+                    [J,K,W,B]=addBetacoef0TLS(J,K,B,covX,betacoef0,betacoefcov,betacoef);
+                else
+                    [J,K,W]=addBetacoef0Nlin(J,K,covY,betacoef0,betacoefcov,betacoef);
+                end
+            end
+        
         dbetacoef = (J'*W*J)\J'*W*K;       % Loop Delta Estimate
         betacoef = betacoef + dbetacoef;   % Loop Estimate
         V = K;                             % Residuals
@@ -271,13 +360,18 @@ else
     ErrorModelInfo.betacoef = betacoef;
     ErrorModelInfo.R = V;
     if istls
+        if betacoef0asobs
+            covX = blkdiag(covX,betacoefcov);
+        end
        ErrorModelInfo.Robs = covX * B' * W * V; 
     end
     ErrorModelInfo.MSE = So2;
     ErrorModelInfo.iter = iter;
-    
+    if isverbose
+        fprintf('So2=%.4f\n',So2);
+    end
     ErrorModelInfo.Q = inv(J'*W*J);              % cofactor
-    if p.Results.noscale
+    if p.Results.noscale %force it not to scale covariance
        if isverbose
            fprintf('Covariance is not scaled\n');
        end
@@ -297,6 +391,74 @@ else
     MSE = So2;
     CovB = ErrorModelInfo.covB;
 end
+%% Do Chi2 Test
+if strcmp(ErrorModelInfo.meta.stochastic, 'Covariance')
+    chi2 = dof * So2;
+    alphaval = p.Results.chi2alpha;
+    chi2low = chi2inv(alphaval/2,dof);
+    chi2high = chi2inv(1-alphaval/2,dof);
+    if chi2>chi2low && chi2<chi2high
+        if p.Results.noscale == false
+           if isverbose
+               warning('consider setting "noscale" equal to true, because the chi2 test passed');
+           end
+        end
+        if isverbose
+            fprintf('Chi2 Test Passed, We cant say So2 is not equal 1 ');
+        end
+        ErrorModelInfo.chi2.testpass = true;
+        ErrorModelInfo.chi2.computedchi2 = chi2;
+        ErrorModelInfo.chi2.chi2low = chi2low;
+        ErrorModelInfo.chi2.chi2high = chi2high;
+    else
+        if isverbose
+            if chi2>chi2high
+                warning('Based on the chi2 test, the stochastic model is either incorrect (overly optimistic), or the data likely contains outliers\n');
+            else
+                warning('Based on the chi2 test, the stochastic model is overestimating the errors.  Your measurement accuracy is better than the stochastic mode');
+            end
+            fprintf('Chi2 Test Failed, So2 is not equal to 1 ');
+        end
+        ErrorModelInfo.chi2.testpass = false;
+        ErrorModelInfo.chi2.computedchi2 = chi2;
+        ErrorModelInfo.chi2.chi2low = chi2low;
+        ErrorModelInfo.chi2.chi2high = chi2high;
+    end
+    if isverbose
+        fprintf('at %.2f level of confidence\n',alphaval);
+    end
+else
+    if isverbose
+        fprintf('Stochastic model isnt covariances, so chi2 test isnt valid\n');
+    end    
+end
+%% include function input in metadata output
+
+end
+function [J,K,W,B]=addBetacoef0TLS(J,K,B,covX,betacoef0,betacoefcov,betacoef)
+
+Jadd = eye(numel(betacoef0));
+J = [J; Jadd];
+
+K = [K; betacoef0-betacoef];
+
+B = blkdiag(B,-eye(numel(betacoef0)));
+
+covX = blkdiag(covX,betacoefcov);
+
+W = inv(B*covX*B');
+
+end
+
+function [J,K,W]=addBetacoef0Nlin(J,K,covY,betacoef0,betacoefcov,betacoef)
+Jadd = eye(numel(betacoef0));
+J = [J; Jadd];
+
+K = [K; betacoef0-betacoef];
+
+covY = blkdiag(covY,betacoefcov);
+
+W = inv(covY);
 
 end
 
