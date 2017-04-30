@@ -1,7 +1,7 @@
 clear; clc
 %testlsr
 addpath('C:\Users\slocumr.ONID\github\learnbook\chapters\leastsquares\alg')
-
+addpath('../');
 data=csvread('ts.csv');
 t = data(:,1);                  % raw time observations
 y = data(:,2);                  % raw elevation observations
@@ -21,5 +21,9 @@ s = diag(stdy.^2);
 
 %% Solve Using LSR
 modelfun = @(b,x)(b(1)*sin(2*pi/2.*x(:,1) + b(2))-x(:,2));
+Jfun = @(b,x)([sin(2*pi/2.*x(:,1) + b(2)) b(1)*cos(2*pi/2.*x(:,1) + b(2))]);
 betacoef0 = Xo;
-[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,modelfun,betacoef0,inv(s));
+[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,modelfun,betacoef0,...
+    'type','total','stochastic',inv(s),'noscale',true,...
+    'beta0Covariance',diag([.5 1]),'analyticalJ',Jfun,...
+    'betacoef0',[1.5;1]);
