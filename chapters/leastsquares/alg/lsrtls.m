@@ -53,7 +53,7 @@ else
    end
 end
 
-%% Calculate NonLinear Least Squares
+%% Calculate Total Least Squares
 X = Xo;                         % set first guess at unknowns
 
 So2 = inf; dSo2 = 1; iter = 0;  % initialize while loop

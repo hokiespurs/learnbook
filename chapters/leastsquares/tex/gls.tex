@@ -97,10 +97,10 @@ x_c = [1,2,3] \hspace{1cm} y_c = [0, 5, 1]  \hspace{1cm} x = [6,1,8] \hspace{1cm
 \]
 
 Calculate the 2D Conformal (Four Parameter Similarity Transform) to go from the measured coordinates to the control coordinates.  (Note that the block diagonal structure of this covariance matrix describes that the x and y coordinate are correlated to each other for each point, but there is no correlation between points).  The 2D Conformal equations are:
-
+\todo{equation is wrong!}
 \begin{align*}
 x_c &= (S\cos(\theta))x - (S\sin(\theta))y + T_x \\
-y_c &= (S\sin(\theta))x - (S\cos(\theta))y + T_y \\
+y_c &= (S\sin(\theta))x + (S\cos(\theta))y + T_y \\
 \end{align*}
 
 By substituting: 
@@ -120,7 +120,7 @@ The observation equations become:
 
 \begin{align*}
 	F: \hspace{1cm} x_c &= ax - by + T_x \\
-	G: \hspace{1cm} y_c &= bx - ay + T_y \\
+	G: \hspace{1cm} y_c &= bx + ay + T_y \\
 \end{align*}
 
 Note that every $(x_a,y_a)\rightarrow(x,y)$ correspondence produces 2 observation equations.
@@ -181,6 +181,7 @@ Interpret the results:
 	\item We can use these results to transform other coordinates with uncertainty using GLOPOV
 	\item The $S_0^2$ value is not near one, indicating the variance-covariance matrix may have over-estimated the predicted error of the control data. a $\chi^2$ goodness of fit test should be done to confirm this.  
 \end{itemize}
+\todo{legend is messed up}
 \begin{figure}[H]
 	\centering
 	\includegraphics[height = 4in]{GLSexample.png}

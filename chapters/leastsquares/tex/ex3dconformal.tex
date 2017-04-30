@@ -22,6 +22,7 @@ r_{31} & r_{32} & r_{33} \\
 \cos(\omega)\cos(\phi) \\
 \end{bmatrix}
 \]
+\todo{add scale to these equations}
 \begin{align*}
 &F: &r_{11}(x + v_x) + r_{12}(y + v_y) + r_{13}(z + v_z) + T_x - (X + v_X) = 0& \\
 &G: &r_{21}(x + v_x) + r_{22}(y + v_y) + r_{23}(z + v_z) + T_y - (Y + v_Y) = 0& \\
@@ -165,7 +166,7 @@ Good reference: https://www.researchgate.net/publication/228608056\_3-D\_Coordin
 \noindent
 \textbf{1. Estimate scale using the standard deviation of the distance from each point to the centroid}
 \[
-S_0 = \dfrac{std(\sqrt{(x-\bar{x})^2+(y-\bar{y})^2+(z-\bar{z})^2})}{std(\sqrt{(X-\bar{X})^2+(Y-\bar{Y})^2+(Z-\bar{Z})^2})} \\
+Scale_0 = \dfrac{std(\sqrt{(x-\bar{x})^2+(y-\bar{y})^2+(z-\bar{z})^2})}{std(\sqrt{(X-\bar{X})^2+(Y-\bar{Y})^2+(Z-\bar{Z})^2})} \\
 \]
 \vspace{0.5cm}
 
