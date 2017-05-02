@@ -143,7 +143,7 @@ else
     end
     ErrorModelInfo.covB = So2*inv(A'*W*A);
 end
-ErrorModelInfo.Sl = A * ErrorModelInfo.covB * A'; % covariance of observations
+% ErrorModelInfo.Sl = A * ErrorModelInfo.covB * A'; % covariance of observations
 ErrorModelInfo.stdX = sqrt(diag(ErrorModelInfo.covB));  % std of solved unknowns
 ErrorModelInfo.Lhat = A * betacoef;                   % predicted L values
 ErrorModelInfo.RMSE = sqrt(V'*V/nObsEqns);        % RMSE
@@ -230,7 +230,7 @@ elseif isnonlinear || istls
        end
        ErrorModelInfo.covB = So2*inv(J'*W*J);
     end
-    ErrorModelInfo.Sl = J * ErrorModelInfo.covB * J'; % covariance of observations
+%     ErrorModelInfo.Sl = J * ErrorModelInfo.covB * J'; % covariance of observations
     ErrorModelInfo.stdX = sqrt(diag(ErrorModelInfo.covB));  % std of solved unknowns
     ErrorModelInfo.Lhat = J * betacoef;                   % predicted L values
     ErrorModelInfo.RMSE = sqrt(V'*V/nObsEqns);        % RMSE
@@ -366,9 +366,9 @@ if isempty(p.Results.stochastic) %default to identity matrix
         fprintf('Stochastic Model : N/A\n');
     end
     if istls
-        covX = eye(nPredictors);
+        covX = speye(nPredictors);
     else
-        covY = eye(nObsEqns);
+        covY = speye(nObsEqns);
     end
 elseif isvector(p.Results.stochastic) %weight for each observation equation
     stochastictype = 'Weight Vector';
@@ -381,7 +381,7 @@ elseif isvector(p.Results.stochastic) %weight for each observation equation
     if numel(p.Results.stochastic)~=nObsEqns
         error('stochastic (weight) vector must be the same number of elements as y')
     end
-    covY = inv(diag(p.Results.stochastic));
+    covY = inv(speye(nObsEqns).*p.Results.stochastic(:));
 else % user input is covariance
     stochastictype = 'Covariance';
     if isverbose
