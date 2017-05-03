@@ -1,7 +1,8 @@
 function hx = bumphdiag(x,n)
-hx = [];
-for i=n:n:size(x,1)
-    hx = blkdiag(hx,x(i-n+1:i,:));
-end
-
+[M,N]=size(x);
+irow = kron((1:M)',ones(1,N));
+icol = nan(N,M/n);
+icol(:) = 1:numel(icol);
+icol = kron(icol.',ones(n,1));
+hx = sparse(irow,icol,x);
 end

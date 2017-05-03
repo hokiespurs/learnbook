@@ -130,7 +130,12 @@ ErrorModelInfo.V = V;
 ErrorModelInfo.MSE = So2;
 ErrorModelInfo.Q = inv(A'*W*A);              % cofactor
 if isverbose
-    fprintf('So2=%.4f\n',So2);
+    fprintf('        So2        '); %
+    fprintf('         betacoef(%.0f)',1:nBetacoef);
+    fprintf('\n');
+    fprintf('%20.10f', So2);
+    fprintf('%20.10f', betacoef);
+    fprintf('\n');
 end
 if p.Results.noscale %force it not to scale covariance
     if isverbose
@@ -336,6 +341,13 @@ h = eps^(1/3); % optimal for central difference
 Jfun = @(bn)(modelfun(bn,x));
 J = calcPartials(Jfun,betacoef',h);
 
+end
+
+function isLinear = testLinearity(modelfun,betacoef,x)
+h = eps^(1/3); % optimal for central difference
+Jfun = @(bn)(modelfun(bn,x(1,:)));
+J = @(b) (calcPartials(Jfun,betacoef',h));
+H = calcPartials(J,betacoef',h); %calculate hessian
 end
 
 function B = calcB(modelfun,betacoef,x)
