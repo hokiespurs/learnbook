@@ -25,6 +25,9 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,modelfun,varargin)
 %   - 'beta0Covariance'      : [empty] (default), (m x m) covariance
 %   - 'betacoef0asObs'       : false (default), option to use guess in modelfun
 %   - 'chi2alpha'            : 0.05 (default), alpha value for confidence
+%   - 'RobustWgtFun'         : Robust Weight Function
+%   - 'Tune'                 : Robust Wgt Tuning Function
+
 %% PARSE INPUTS
 p = inputParser;
 % default values
