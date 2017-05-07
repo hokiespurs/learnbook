@@ -1,10 +1,9 @@
 function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,modelfun,varargin)
-% LSR 
+% LSR Leasr Squares Regression
 % Inputs:
 %   - x              : Predictor variables
 %   - y              : Response values
 %   - modelfun       : Model function handle @modelfun(betacoef,X)
-%   - betacoef0      : Initial coefficient values
 %   - options        : Structure with optional parameters
 % 
 % Outputs:
@@ -16,6 +15,7 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,modelfun,varargin)
 %   - ErrorModelInfo : Information about error model
 % 
 % Optional Parameters:
+%   - 4th input / 'betacoef0': Initial coefficient values
 %   - 'type'                 : 'linear/ols/wls/gls','nonlinear'(default),'tls'
 %   - 'beta0'                : required vector for nonlinear and tls
 %   - 'stochastic'           : [empty] (default), vector (weights), covariance matrix (S)
@@ -27,6 +27,7 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,modelfun,varargin)
 %   - 'chi2alpha'            : 0.05 (default), alpha value for confidence
 %   - 'RobustWgtFun'         : Robust Weight Function
 %   - 'Tune'                 : Robust Wgt Tuning Function
+%   - 'ransac'               : optional structure with ransac parameters
 
 %% Input Parsing/Checks
 % Get constants from default parameters
@@ -34,7 +35,6 @@ narginchk(3,inf);
 nObsEqns = numel(y);
 nPredictors = numel(x);
 nBetacoef = calcNbetacoef(modelfun,x); %throws error if bad modelfun
-ndof = nObsEqns-nBetacoef; 
 
 % default values
 defaultBetaCoef0    = [];
@@ -50,6 +50,7 @@ defaultScaleCov     = true;
 defaultMaxIter      = 100;
 defaultVerbose      = false;
 defaultDerivstep    = eps^(1/3);
+defaultRansac       = [];
 
 % expected Values
 expectedType = {'ols','wls','gls','lin','linear',...
@@ -76,6 +77,7 @@ checkScaleCov     = @(X) islogical(X);
 checkMaxIter      = @(X) isinteger(X) && X>0;
 checkVerbose      = @(X) islogical(X);
 checkDerivStep    = @(X) isnumeric(X) && isscalar(X) && X>0;
+checkRansac       = @(x) isstruct(X);
 
 % parse inputs
 p = inputParser;
@@ -98,6 +100,7 @@ addParameter(p,'scaleCov'    ,defaultScaleCov     ,checkScaleCov);
 addParameter(p,'maxiter'     ,defaultMaxIter      ,checkMaxIter);
 addParameter(p,'verbose'     ,defaultVerbose      ,checkVerbose);
 addParameter(p,'derivstep'   ,defaultDerivstep    ,checkDerivStep);
+addParameter(p,'ransac'      ,defaultRansac       ,checkRansac);
 
 parse(p,x,y,modelfun,varargin{:});
 
@@ -111,29 +114,149 @@ scalecov = p.Results.scaleCov;
 chi2alpha = p.Results.chi2alpha;
 [robustTune, robustWgtFun] = getRobust(p.Results.RobustWgtFun, p.Results.Tune);
 betacoef0cov = p.Results.betaCoef0Cov;
-[Sx, iscovariance, isweights] = getCovariance(p.Results.weights);
-
-JybFunction = @(b,x) calcJYB(modelfun,b,x,p.Results.derivstep);
-JyxFunction = @(b,x) calcJYX(modelfun,b,x,p.Results.derivstep);
-
+[Sx, ~] = getCovariance(p.Results.weights,nObsEqns);
+if isempty(p.Results.JacobianYB)
+    JybFunction = @(b,x) calcJYB(modelfun,b,x,p.Results.derivstep);
+else
+    JybFunction = p.Results.JacobianYB;
+end
+if isempty(p.Results.JacobianYX)
+    JyxFunction = @(b,x) calcJYX(modelfun,b,x,p.Results.derivstep);
+else
+    JyxFunction = p.Results.JacobianYX;
+end
 %% Determine least squares type and do some checks of input values
 lstype = getlstype(p.Results.type,modelfun,betaCoef0,x);
 
 dolstypechecks(lstype,p);
 
-%% Call Specific Least Squares Function Depending on Computed Type
+[ransacparams,doransac] = checkRansac(p.Results.ransac);
+
+if isverbose
+    printPreSummary(lstype,ransacparams,p,nBetacoef);
+end
+
+%% Make function handle for Specific Least Squares Function Depending
 switch lstype
     case 1
-        fprintf('linear\n');
+        lsrfun = @(x,y) lsrlin(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
+            JybFunction,chi2alpha,scalecov,isverbose);
     case 2
-        fprintf('nonlinear\n');
+        lsrfun = @(x,y) lsrnlin(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
+            JybFunction,chi2alpha,scalecov,maxiter,isverbose);
     case 3
-        fprintf('robust linear\n');
+        lsrfun = @(x,y) lsrrobustlin(x,y,modelfun,betaCoef0,...
+            JybFunction,robustWgtFun,robustTune,isverbose);
     case 4
-        fprintf('robust nonlinear\n');
+        lsrfun = @(x,y) lsrrobustnlin(x,y,modelfun,betaCoef0,...
+            JybFunction,robustWgtFun,robustTune,maxiter,isverbose);
     case 5
-        fprintf('total \n');
+        lsrfun = @(x,y) lsrtotal(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
+            JybFunction,JyxFunction,chi2alpha,scalecov,maxiter,isverbose);
 end
+
+%% Compute Least Squares (optionally use ransac)
+if ~doransac
+    [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrfun(x,y);
+else
+    [betacoef,R,J,CovB,MSE,ErrorModelInfo] = calcransac(lsrfun,x,y,ransacparams);
+end
+
+end
+
+function printPreSummary(lstype,p,nBetacoef)
+%% Print output to the screen summarizing least squares regression params
+hline = [repmat('-',1,50) '\n'];
+switch lstype
+    case 1
+        fprintf('%sLINEAR LEAST SQUARES\n%s',hline,hline);
+    case 2
+        fprintf('%sNONLINEAR LEAST SQUARES\n%s',hline,hline);
+    case 3
+        fprintf('%sROBUST LINEAR LEAST SQUARES\n%s',hline,hline);
+    case 4
+        fprintf('%sROBUST NONLINEAR LEAST SQUARES\n%s',hline,hline);
+    case 5
+        fprintf('%sTOTAL LEAST SQUARES\n%s',hline,hline);
+end
+
+nObsEqns = numel(p.Results.y);
+nPredictors = numel(p.Results.x);
+ndof = nObsEqns-nBetacoef; 
+
+fprintf('test');
+end
+
+function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrlin(x,y,modelfun,...
+    betaCoef0,Sx,betacoef0cov,JybFunction,chi2alpha,scalecov,isverbose)
+%% Calculate linear least squares
+nBetacoef = calcNbetacoef(modelfun,x);
+A = JybFunction(zeros(nBetacoef,1),x);
+L = y;
+
+if betacoef0asobs %add betacoef0 as observation equations
+    if isverbose
+       fprintf('Using betacoef0 as observation equations: yes\n'); 
+    end
+    
+    L(end+1:end+nBetacoef)=betaCoef0;
+    A = [A;eye(nBetacoef)];
+    covY = blkdiag(Sx,betacoefcov);
+else
+    if isverbose
+       fprintf('Using betacoef0 as observation equations: no\n'); 
+    end    
+end
+
+W = inv(covY);
+
+betacoef = (A'*W*A)\A'*W*L;     % unknowns
+V = A * betacoef - L;           % residuals
+So2 = V'*W*V/dof;               % Reference Variance
+ErrorModelInfo.betacoef = betacoef;
+ErrorModelInfo.V = V;
+ErrorModelInfo.MSE = So2;
+ErrorModelInfo.Q = inv(A'*W*A);              % cofactor
+if isverbose
+    fprintf('        So2        '); %
+    fprintf('         betacoef(%.0f)',1:nBetacoef);
+    fprintf('\n');
+    fprintf('%20.10f', So2);
+    fprintf('%20.10f', betacoef);
+    fprintf('\n');
+end
+if p.Results.noscale %force it not to scale covariance
+    if isverbose
+        fprintf('Covariance is not scaled\n');
+    end
+    ErrorModelInfo.covB = inv(A'*W*A);
+else
+    if isverbose
+        fprintf('Covariance is scaled\n');
+    end
+    ErrorModelInfo.covB = So2*inv(A'*W*A);
+end
+ErrorModelInfo.stdX = sqrt(diag(ErrorModelInfo.covB));% std of solved unknowns
+ErrorModelInfo.Lhat = A * betacoef;                   % predicted L values
+ErrorModelInfo.RMSE = sqrt(V'*V/nObsEqns);            % RMSE
+ErrorModelInfo.r2 = var(ErrorModelInfo.Lhat)/var(L);  % R^2 Skill
+% handle output variables
+R = V;
+MSE = So2;
+CovB = ErrorModelInfo.covB;
+J = A;
+
+end
+
+function [ransacparams,doransac] = checkRansac(ransac)
+% input a possible ransac structure and return all the variables needed
+
+
+end
+
+function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = calcransac(lsrfun,x,y,ransacparams)
+% do ransac parameter estimation
+
 
 end
 
@@ -189,7 +312,7 @@ for i=1:numel(illegalFields)
     end
 end
     % throw warnings
-    [~, iscovariance, ~] = getCovariance(p.Results.weights);
+    [~, iscovariance] = getCovariance(p.Results.weights);
     if any(lstype == [1 2 5])
         if ~iscovariance && any(strcmp('chi2alpha',inputParams))
             warning('chi2alpha is meaningless without input covariance');
@@ -350,19 +473,21 @@ else
 end
 end
 
-function [Sx, iscovariance, isweights] = getCovariance(weights)
+function [Sx, iscovariance] = getCovariance(weights,n)
 % return a covariance depending on the type of input
 % vector is "weights", where covariance is inverse of those on the diagonal
 % matrix is assumed to be a covariance
-
-if isvector(weights) %matrix is weights
+if isempty(weights)
+    if nargin ==2
+       Sx = speye(n); 
+    end
+    iscovariance = false;
+elseif isvector(weights) %matrix is weights
     Sx = diag(1./weights);
     iscovariance = false;
-    isweights = true;
 else %matrix is covariance
     Sx = weights;
     iscovariance = true;
-    isweights = true;
 end
 
 end
