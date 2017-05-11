@@ -77,7 +77,7 @@ checkScaleCov     = @(X) islogical(X);
 checkMaxIter      = @(X) isinteger(X) && X>0;
 checkVerbose      = @(X) islogical(X);
 checkDerivStep    = @(X) isnumeric(X) && isscalar(X) && X>0;
-checkRansac       = @(x) isstruct(X);
+checkRansac       = @(X) isstruct(X);
 
 % parse inputs
 p = inputParser;
@@ -130,7 +130,7 @@ lstype = getlstype(p.Results.type,modelfun,betaCoef0,x);
 
 dolstypechecks(lstype,p);
 
-[ransacparams,doransac] = checkRansac(p.Results.ransac);
+[ransacparams,doransac] = getRansac(p.Results.ransac);
 
 if isverbose
     printPreSummary(lstype,ransacparams,p,nBetacoef);
@@ -141,11 +141,11 @@ switch lstype
     case 1
         lsrfun = @(x,y) lsrlin(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
             JybFunction,scalecov,isverbose);
-    case 2 || 5
+    case {2,5}
         lsrfun = @(x,y) lsrnlin(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
             JybFunction,JyxFunction,scalecov,maxiter,isverbose);
     case 3
-        lsrfun = @(x,y) lsrrobustlin(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
+        lsrfun = @(x,y) lsrrobustlin(x,y,modelfun,betaCoef0,betacoef0cov,...
             JybFunction,scalecov,isverbose,robustWgtFun,robustTune);
     case 4
         lsrfun = @(x,y) lsrrobustnlin(x,y,modelfun,betaCoef0,...
@@ -161,7 +161,7 @@ end
 
 end
 
-function printPreSummary(lstype,p,nBetacoef)
+function printPreSummary(lstype,ransacparams,p,nBetacoef)
 %% Print output to the screen summarizing least squares regression params
 nObsEqns = numel(p.Results.y);
 nPredictors = numel(p.Results.x);
@@ -189,11 +189,56 @@ fprintf('\t # of Degrees of Freedom    : %.0f\n',ndof);
 end
 
 function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrrobustlin(x,y,...
-    modelfun,betaCoef0,Sx,betacoef0cov,JybFunction,scalecov,isverbose,...
+    modelfun,betaCoef0,betacoef0cov,JybFunction,scalecov,isverbose,...
     robustWgtFun,robustTune)
 %% Calculate Robust Linear Least Squares
+if isverbose
+   fprintf('LINEAR ROBUST ITERATIONS\n');
+   fprintf('Iteration\t\tSo2\n');
+end
+%initialize while loop
+dMSE = 1;
+lastMSE = inf;
+iter = 0;
+W = ones(numel(y),1);
+while dMSE>0 && iter<100
+[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrlin(x,y,modelfun,betaCoef0,W,betacoef0cov,...
+            JybFunction,JyxFunction,scalecov,maxiter,false);
+        dMSE = MSE-lastMSE;
+        lastMSE = MSE;
+        iter = iter+1;
+        if isverbose
+           fprintf('   %.0f  \t\t %.2f\n',MSE); 
+        end
+        W = robustWgtFun(R,robustTune);
+end
 
+end
 
+function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrrobustnlin(x,y,...
+    modelfun,betaCoef0,betacoef0cov,JybFunction,scalecov,isverbose,...
+    robustWgtFun,robustTune)
+%% Calculate Robust Linear Least Squares
+if isverbose
+   fprintf('LINEAR ROBUST ITERATIONS\n');
+   fprintf('    Iteration\t\tSo2\n');
+end
+%initialize while loop
+dMSE = 1;
+lastMSE = inf;
+iter = 0;
+W = ones(numel(y),1);
+while dMSE>0 && iter<100
+[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrnlin(x,y,modelfun,betaCoef0,W,betacoef0cov,...
+            JybFunction,JyxFunction,scalecov,maxiter,false);
+        dMSE = MSE-lastMSE;
+        lastMSE = MSE;
+        iter = iter+1;
+        if isverbose
+           fprintf('ROBUST: %.0f  \t\t %.2f\n',MSE); 
+        end
+        W = robustWgtFun(R,robustTune);
+end
 
 end
 
@@ -212,7 +257,7 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrnlin(x,y,modelfun,betaCoef0
 
     if isverbose
         fprintf('\niter :        So2        ');
-        fprintf('         betacoef(%.0f)',1:nBetacoef);
+        fprintf('         betacoef(%.0f)',1:n);
         fprintf('\n');
     end
 
@@ -326,11 +371,11 @@ L = y;
 if ~isempty(betacoef0cov) %add betacoef0 as observation equations
     L(end+1:end+nBetacoef)=betaCoef0;
     A = [A;eye(nBetacoef)];
-    covY = blkdiag(Sx,betacoefcov);
+    Sx = blkdiag(Sx,betacoefcov);
 end
 
 %do least squares calculation
-W = inv(covY);
+W = inv(Sx);
 m = numel(L);                   % number of observations
 n = nBetacoef;                  % number of unknowns
 dof = m-n;                      % degrees of freedom
@@ -379,16 +424,17 @@ if isverbose
 end
 end
 
-function [ransacparams,doransac] = checkRansac(ransac)
+function [ransacparams,doransac] = getRansac(ransac)
 % input a possible ransac structure and return all the variables needed
 
-
+ransacparams=[];
+doransac = false;
 end
 
 function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = calcransac(lsrfun,x,y,ransacparams)
 % do ransac parameter estimation
 
-
+[betacoef,R,J,CovB,MSE,ErrorModelInfo] = v2vars(ones(6,1));
 end
 
 function dolstypechecks(lstype,p)
@@ -443,7 +489,7 @@ for i=1:numel(illegalFields)
     end
 end
     % throw warnings
-    [~, iscovariance] = getCovariance(p.Results.weights);
+    [~, iscovariance] = getCovariance(p.Results.weights,0);
     if any(lstype == [1 2 5])
         if ~iscovariance && any(strcmp('chi2alpha',inputParams))
             warning('chi2alpha is meaningless without input covariance');
@@ -649,7 +695,7 @@ end
 JYXfun = @(xn)(modelfun(b,xn));
 Jyx = calcPartials(JYXfun,x,h);
 
-nEqn = size(modelfun(betacoef,x),1)/size(x,1);
+nEqn = size(modelfun(b,x),1)/size(x,1);
 
 Jyx = bumphdiag(Jyx,nEqn);
 end
@@ -699,4 +745,10 @@ function hx = bumphdiag(x,n)
     icol(:) = 1:numel(icol);
     icol = kron(icol.',ones(n,1));
     hx = sparse(irow,icol,x);
+end
+
+function K = calcK(modelfun,betacoef,x,y)
+% calculate the K matrix for each iteration
+K = y - modelfun(betacoef,x);
+
 end
