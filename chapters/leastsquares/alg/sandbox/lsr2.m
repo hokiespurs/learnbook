@@ -140,19 +140,16 @@ end
 switch lstype
     case 1
         lsrfun = @(x,y) lsrlin(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
-            JybFunction,chi2alpha,scalecov,isverbose);
-    case 2
+            JybFunction,scalecov,isverbose);
+    case 2 || 5
         lsrfun = @(x,y) lsrnlin(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
-            JybFunction,chi2alpha,scalecov,maxiter,isverbose);
+            JybFunction,JyxFunction,scalecov,maxiter,isverbose);
     case 3
-        lsrfun = @(x,y) lsrrobustlin(x,y,modelfun,betaCoef0,...
-            JybFunction,robustWgtFun,robustTune,isverbose);
+        lsrfun = @(x,y) lsrrobustlin(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
+            JybFunction,scalecov,isverbose,robustWgtFun,robustTune);
     case 4
         lsrfun = @(x,y) lsrrobustnlin(x,y,modelfun,betaCoef0,...
             JybFunction,robustWgtFun,robustTune,maxiter,isverbose);
-    case 5
-        lsrfun = @(x,y) lsrtotal(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
-            JybFunction,JyxFunction,chi2alpha,scalecov,maxiter,isverbose);
 end
 
 %% Compute Least Squares (optionally use ransac)
@@ -166,6 +163,10 @@ end
 
 function printPreSummary(lstype,p,nBetacoef)
 %% Print output to the screen summarizing least squares regression params
+nObsEqns = numel(p.Results.y);
+nPredictors = numel(p.Results.x);
+ndof = nObsEqns-nBetacoef; 
+
 hline = [repmat('-',1,50) '\n'];
 switch lstype
     case 1
@@ -180,43 +181,194 @@ switch lstype
         fprintf('%sTOTAL LEAST SQUARES\n%s',hline,hline);
 end
 
-nObsEqns = numel(p.Results.y);
-nPredictors = numel(p.Results.x);
-ndof = nObsEqns-nBetacoef; 
+fprintf('\t # of Observation Equations : %.0f\n',nObsEqns);
+fprintf('\t # of Predictor Variables   : %.0f\n',nPredictors);
+fprintf('\t # of Beta Coefficients     : %.0f\n',nBetacoef);
+fprintf('\t # of Degrees of Freedom    : %.0f\n',ndof);
 
-fprintf('test');
+end
+
+function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrrobustlin(x,y,...
+    modelfun,betaCoef0,Sx,betacoef0cov,JybFunction,scalecov,isverbose,...
+    robustWgtFun,robustTune)
+%% Calculate Robust Linear Least Squares
+
+
+
+end
+
+function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrnlin(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
+            JybFunction,JyxFunction,scalecov,maxiter,isverbose)
+%% Calculate Nonlinear and Total Least Squares
+    m = numel(y);                   % number of observations
+    n = calcNbetacoef(modelfun,x);  % number of unknowns
+    dof = m-n;                      % degrees of freedom
+
+    if isempty(JyxFunction)
+        istls = false;
+    else
+        istls = true;
+    end
+
+    if isverbose
+        fprintf('\niter :        So2        ');
+        fprintf('         betacoef(%.0f)',1:nBetacoef);
+        fprintf('\n');
+    end
+
+    %initialize while loop parameters
+    So2 = inf;
+    dSo2 = 1;
+    iter = 0;
+    betacoef = betaCoef0;                  % set first guess at unknowns
+    while dSo2>0 && iter<maxiter %loop until So2 increases or exceed maxiter iterations
+            J = JybFunction(betacoef,x);
+            K = calcK(modelfun,betacoef,x,y);
+            if istls
+                B = JyxFunction(betacoef,x);
+                W = inv(B*Sx*B');            %equivalent weight matrix
+            else
+                W = inv(Sx);
+            end
+            
+            if ~isempty(betacoef0cov)
+                if istls
+                    [J,K,W,B]=addBetacoef0TLS(J,K,B,Sx,betacoef0,betacoef0cov,betacoef);
+                else
+                    [J,K,W]=addBetacoef0Nlin(J,K,covY,betacoef0,betacoef0cov,betacoef);
+                end
+            end
+        
+        dbetacoef = (J'*W*J)\J'*W*K;       % Loop Delta Estimate
+        betacoef = betacoef + dbetacoef;   % Loop Estimate
+        V = K;                             % Residuals
+        dSo2 = So2 - V'*W*V/dof;           % Change in Reference Variance
+        So2 = (V'*W*V)/dof;                % Reference Variance
+        iter = iter + 1;
+        % print status to screen
+        if isverbose
+            fprintf('%3.0f : ',iter);
+            fprintf('%20.10f', So2);
+            fprintf('%20.10f', betacoef);
+            fprintf('\n');
+        end        
+    end
+    if istls
+        if ~isempty(betacoef0cov)
+            covX = blkdiag(Sx,betacoefcov);
+        end
+       Robs = covX * B' * W * V; 
+    end
+    Q = inv(J'*W*J);              % cofactor
+    if scalecov                   % option to not scale covariance
+       Sx = So2 * Q;
+    else
+       Sx = Q;
+    end
+    stdX = sqrt(diag(Sx));        % std of solved unknowns
+    Lhat = J * betacoef;          % predicted L values
+    RMSE = sqrt(V'*V/nObsEqns);   % RMSE
+    % handle output variables
+    R = V;
+    CovB = Sx;
+    MSE = So2;
+
+    ErrorModelInfo.m = m;
+    ErrorModelInfo.n = n;
+    ErrorModelInfo.dof = dof;
+    ErrorModelInfo.betacoef = betacoef;
+    ErrorModelInfo.R = V;
+    ErrorModelInfo.Robs = Robs;
+    ErrorModelInfo.So2 = So2;
+    ErrorModelInfo.Q = Q;
+    ErrorModelInfo.CovB = Sx;
+    ErrorModelInfo.stdX = stdX;
+    ErrorModelInfo.Lhat = Lhat;
+    ErrorModelInfo.r2 = r2;
+    ErrorModelInfo.RMSE = RMSE;        
+        
+end
+
+function [J,K,W,B]=addBetacoef0TLS(J,K,B,covX,betacoef0,betacoefcov,betacoef)
+%adds beta coefficient 
+Jadd = eye(numel(betacoef0));
+J = [J; Jadd];
+
+K = [K; betacoef0-betacoef];
+
+B = blkdiag(B,-eye(numel(betacoef0)));
+
+covX = blkdiag(covX,betacoefcov);
+
+W = inv(B*covX*B');
+
+end
+
+function [J,K,W]=addBetacoef0Nlin(J,K,covY,betacoef0,betacoefcov,betacoef)
+Jadd = eye(numel(betacoef0));
+J = [J; Jadd];
+
+K = [K; betacoef0-betacoef];
+
+covY = blkdiag(covY,betacoefcov);
+
+W = inv(covY);
+
 end
 
 function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrlin(x,y,modelfun,...
-    betaCoef0,Sx,betacoef0cov,JybFunction,chi2alpha,scalecov,isverbose)
+    betaCoef0,Sx,betacoef0cov,JybFunction,scalecov,isverbose)
 %% Calculate linear least squares
 nBetacoef = calcNbetacoef(modelfun,x);
 A = JybFunction(zeros(nBetacoef,1),x);
 L = y;
 
-if betacoef0asobs %add betacoef0 as observation equations
-    if isverbose
-       fprintf('Using betacoef0 as observation equations: yes\n'); 
-    end
-    
+if ~isempty(betacoef0cov) %add betacoef0 as observation equations
     L(end+1:end+nBetacoef)=betaCoef0;
     A = [A;eye(nBetacoef)];
     covY = blkdiag(Sx,betacoefcov);
-else
-    if isverbose
-       fprintf('Using betacoef0 as observation equations: no\n'); 
-    end    
 end
 
+%do least squares calculation
 W = inv(covY);
-
-betacoef = (A'*W*A)\A'*W*L;     % unknowns
-V = A * betacoef - L;           % residuals
+m = numel(L);                   % number of observations
+n = nBetacoef;                  % number of unknowns
+dof = m-n;                      % degrees of freedom
+X = (A'*W*A)\A'*W*L;            % unknowns
+V = A * X - L;                  % residuals
 So2 = V'*W*V/dof;               % Reference Variance
-ErrorModelInfo.betacoef = betacoef;
-ErrorModelInfo.V = V;
-ErrorModelInfo.MSE = So2;
-ErrorModelInfo.Q = inv(A'*W*A);              % cofactor
+Q = inv(A'*W*A);                % cofactor
+if scalecov                     % option to not scale covariance
+   Sx = So2 * Q;
+else
+   Sx = Q;
+end
+stdX = sqrt(diag(Sx));          % std of solved unknowns
+Lhat = A * X;                   % predicted L values
+r2 = var(Lhat)/var(L);          % R^2 Skill
+RMSE = sqrt(V'*V/m);            % RMSE
+
+%assemble output variables and structure
+betacoef = X;
+R = V;
+J = A;
+CovB = Sx;
+MSE = So2;
+
+ErrorModelInfo.m=m;
+ErrorModelInfo.n=n;
+ErrorModelInfo.dof=dof;
+ErrorModelInfo.betacoef=X;
+ErrorModelInfo.V=V;
+ErrorModelInfo.So2=So2;
+ErrorModelInfo.Q=Q;
+ErrorModelInfo.CovB=Sx;
+ErrorModelInfo.stdX=stdX;
+ErrorModelInfo.Lhat=Lhat;
+ErrorModelInfo.r2=r2;
+ErrorModelInfo.RMSE=RMSE;         
+
+% print info to screen if verbose
 if isverbose
     fprintf('        So2        '); %
     fprintf('         betacoef(%.0f)',1:nBetacoef);
@@ -225,27 +377,6 @@ if isverbose
     fprintf('%20.10f', betacoef);
     fprintf('\n');
 end
-if p.Results.noscale %force it not to scale covariance
-    if isverbose
-        fprintf('Covariance is not scaled\n');
-    end
-    ErrorModelInfo.covB = inv(A'*W*A);
-else
-    if isverbose
-        fprintf('Covariance is scaled\n');
-    end
-    ErrorModelInfo.covB = So2*inv(A'*W*A);
-end
-ErrorModelInfo.stdX = sqrt(diag(ErrorModelInfo.covB));% std of solved unknowns
-ErrorModelInfo.Lhat = A * betacoef;                   % predicted L values
-ErrorModelInfo.RMSE = sqrt(V'*V/nObsEqns);            % RMSE
-ErrorModelInfo.r2 = var(ErrorModelInfo.Lhat)/var(L);  % R^2 Skill
-% handle output variables
-R = V;
-MSE = So2;
-CovB = ErrorModelInfo.covB;
-J = A;
-
 end
 
 function [ransacparams,doransac] = checkRansac(ransac)
@@ -362,15 +493,6 @@ end
 
 end
 
-function isLinear = isModelLinear(modelfun,betacoef,x)
-%% Compute the Numerical Hessian to determine linearity of modelfun
-h = eps^(1/3); % optimal for central difference
-Jfun = @(bn)(modelfun(bn,x(1,:)));
-J = @(b) (calcPartials(Jfun,betacoef',h));
-H = calcPartials(J,betacoef',h); %calculate hessian
-isLinear = ~any(H(:));
-end
-
 function nBetacoef = calcNbetacoef(modelfun,x)
 %% Try catch loop until the number of beta parameters doesnt throw an error
 for iTestBeta=1:100 %loop and test different nBetacoef and see what works
@@ -386,6 +508,16 @@ end
 if nBetacoef ==100
     error('Unable to determine the number of beta coefficients');
 end
+end
+
+%% IsValid Functions
+function isLinear = isModelLinear(modelfun,betacoef,x)
+%% Compute the Numerical Hessian to determine linearity of modelfun
+h = eps^(1/3); % optimal for central difference
+Jfun = @(bn)(modelfun(bn,x(1,:)));
+J = @(b) (calcPartials(Jfun,betacoef',h));
+H = calcPartials(J,betacoef',h); %calculate hessian
+isLinear = ~any(H(:));
 end
 
 function [robustTune, robustWgtFun, isvalid] = getRobust(weightfun, tune)
