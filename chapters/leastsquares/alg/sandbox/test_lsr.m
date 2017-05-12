@@ -71,7 +71,7 @@ YNOISEREPORTEDSTDNOISE = 0.1;
 MINCOMPUTEDSTD = 0.01; %avoids inf weights
 
 GUESSB = [0.5;5];
-GUESSBCOV = diag([0.1 1]);
+GUESSBCOV = diag([0.5 5]);
 
 PLOTX = [0 20];
 PLOTY = [0 20];
@@ -98,7 +98,7 @@ mxplusbminusy = @(b,x)(b(1)*x(:,1)+b(2) - x(:,2));
 
 %% Linear Unweighted
 % do linear least squares
-[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,ymxplusb,'type','linear','verbose',true);
+[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr2(x,y,ymxplusb,'type','linear','verbose',true);
 
 % glopov
 dydB = @(b,x)([x ones(size(x))]);%could also do numerically
@@ -135,8 +135,8 @@ ylim(PLOTY);
 % do weighted linear least squares
 weights = 1./(yerrorest); %cheat and weight it by the amount of noise added
 
-[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,ymxplusb,...
-                                 'type','linear','stochastic',weights);
+[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr2(x,y,ymxplusb,...
+                                 'type','linear','weights',weights,'verbose',true);
 
 % glopov
 dydB = @(b,x)([x ones(size(x))]);%could also do numerically
@@ -174,9 +174,10 @@ ylim(PLOTY);
 % do weighted linear least squares
 weights = diag(1./(yerrorest)); %cheat and weight it by the amount of noise added
 
-[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,ymxplusb,...
-                                 'type','linear','stochastic',weights,...
-                                 'betacoef0',GUESSB,'beta0covariance',GUESSBCOV);
+[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr2(x,y,ymxplusb,...
+                                 'type','linear','weights',weights,...
+                                 'betacoef0',GUESSB,'betaCoef0Cov',GUESSBCOV,...
+                                 'verbose',true);
 
 % glopov
 dydB = @(b,x)([x ones(size(x))]);%could also do numerically
@@ -214,7 +215,7 @@ ylim(PLOTY);
 % do weighted linear least squares
 Y = zeros(NOBS,1);
 X = [x y];
-[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(X,Y,mxplusbminusy,...
+[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr2(X,Y,mxplusbminusy,...
                                  'type','total','betacoef0',GUESSB,'verbose',true);
 
 % glopov

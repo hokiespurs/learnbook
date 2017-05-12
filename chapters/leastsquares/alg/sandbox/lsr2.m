@@ -114,7 +114,6 @@ scalecov = p.Results.scaleCov;
 chi2alpha = p.Results.chi2alpha;
 [robustTune, robustWgtFun] = getRobust(p.Results.RobustWgtFun, p.Results.Tune);
 betacoef0cov = p.Results.betaCoef0Cov;
-[Sx, ~] = getCovariance(p.Results.weights,nObsEqns);
 if isempty(p.Results.JacobianYB)
     JybFunction = @(b,x) calcJYB(modelfun,b,x,p.Results.derivstep);
 else
@@ -131,6 +130,7 @@ lstype = getlstype(p.Results.type,modelfun,betaCoef0,x);
 dolstypechecks(lstype,p);
 
 [ransacparams,doransac] = getRansac(p.Results.ransac);
+[Sx, ~] = getCovariance(lstype,p.Results.weights,x);
 
 if isverbose
     printPreSummary(lstype,ransacparams,p,nBetacoef);
@@ -167,18 +167,18 @@ nObsEqns = numel(p.Results.y);
 nPredictors = numel(p.Results.x);
 ndof = nObsEqns-nBetacoef; 
 
-hline = [repmat('-',1,50) '\n'];
+hline = repmat('-',1,50);
 switch lstype
     case 1
-        fprintf('%sLINEAR LEAST SQUARES\n%s',hline,hline);
+        fprintf('%s\nLINEAR LEAST SQUARES\n%s\n',hline,hline);
     case 2
-        fprintf('%sNONLINEAR LEAST SQUARES\n%s',hline,hline);
+        fprintf('%s\nNONLINEAR LEAST SQUARES\n%s\n',hline,hline);
     case 3
-        fprintf('%sROBUST LINEAR LEAST SQUARES\n%s',hline,hline);
+        fprintf('%s\nROBUST LINEAR LEAST SQUARES\n%s\n',hline,hline);
     case 4
-        fprintf('%sROBUST NONLINEAR LEAST SQUARES\n%s',hline,hline);
+        fprintf('%s\nROBUST NONLINEAR LEAST SQUARES\n%s\n',hline,hline);
     case 5
-        fprintf('%sTOTAL LEAST SQUARES\n%s',hline,hline);
+        fprintf('%s\nTOTAL LEAST SQUARES\n%s\n',hline,hline);
 end
 
 fprintf('\t # of Observation Equations : %.0f\n',nObsEqns);
@@ -301,6 +301,8 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrnlin(x,y,modelfun,betaCoef0
     if istls
         if ~isempty(betacoef0cov)
             covX = blkdiag(Sx,betacoefcov);
+        else
+            covX = Sx;
         end
        Robs = covX * B' * W * V; 
     end
@@ -312,7 +314,7 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrnlin(x,y,modelfun,betaCoef0
     end
     stdX = sqrt(diag(Sx));        % std of solved unknowns
     Lhat = J * betacoef;          % predicted L values
-    RMSE = sqrt(V'*V/nObsEqns);   % RMSE
+    RMSE = sqrt(V'*V/m);          % RMSE
     % handle output variables
     R = V;
     CovB = Sx;
@@ -329,7 +331,7 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrnlin(x,y,modelfun,betaCoef0
     ErrorModelInfo.CovB = Sx;
     ErrorModelInfo.stdX = stdX;
     ErrorModelInfo.Lhat = Lhat;
-    ErrorModelInfo.r2 = r2;
+    ErrorModelInfo.r2 = NaN; %no r2 for nonlinear
     ErrorModelInfo.RMSE = RMSE;        
         
 end
@@ -371,7 +373,7 @@ L = y;
 if ~isempty(betacoef0cov) %add betacoef0 as observation equations
     L(end+1:end+nBetacoef)=betaCoef0;
     A = [A;eye(nBetacoef)];
-    Sx = blkdiag(Sx,betacoefcov);
+    Sx = blkdiag(Sx,betacoef0cov);
 end
 
 %do least squares calculation
@@ -489,7 +491,7 @@ for i=1:numel(illegalFields)
     end
 end
     % throw warnings
-    [~, iscovariance] = getCovariance(p.Results.weights,0);
+    [~, iscovariance] = getCovariance([],p.Results.weights,[]);
     if any(lstype == [1 2 5])
         if ~iscovariance && any(strcmp('chi2alpha',inputParams))
             warning('chi2alpha is meaningless without input covariance');
@@ -651,13 +653,17 @@ else
 end
 end
 
-function [Sx, iscovariance] = getCovariance(weights,n)
+function [Sx, iscovariance] = getCovariance(lstype,weights,x)
 % return a covariance depending on the type of input
 % vector is "weights", where covariance is inverse of those on the diagonal
 % matrix is assumed to be a covariance
+nEqn = size(x,1);
+nVars = numel(x);
 if isempty(weights)
-    if nargin ==2
-       Sx = speye(n); 
+    if lstype == 5 % total least squares
+        Sx = speye(nVars);
+    else
+        Sx = speye(nEqn);
     end
     iscovariance = false;
 elseif isvector(weights) %matrix is weights

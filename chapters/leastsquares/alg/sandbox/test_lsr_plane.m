@@ -47,7 +47,7 @@ z = ztrue + znoise;
 %% Nonlinear unweighted
 X = [x y z];
 Y = zeros(size(x));
-[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr2(X,Y,planeval0,GUESSB,'type','nonlinear','verbose',true);
+[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr2(X,Y,planeval0,GUESSB,'type','total','verbose',true);
 
 %plot
 f5=figure(5);clf;hold on
