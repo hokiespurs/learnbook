@@ -5,7 +5,8 @@ y = [0 15 23 25 40];
 S = blkdiag([45 -30;-30 30],[20 -10;-10 70],[80 4;4 4],[40 -13;-13 60],[30 -25;-25 30]);
 
 %% Solve TLS
-X = [0.5; 0];                      % initial unknowns guess
+Xo =[0.5; 0]; 
+X = Xo;                      % initial unknowns guess
 
 So2 = inf; dSo2 = 1; iter = 0;     % initialize for while loop
 
@@ -76,7 +77,7 @@ hl.Interpreter = 'latex';
 hl.Location = 'northwest';
 grid on
 
-saveas(f,'../fig/TLSexampleA.png');
+% saveas(f,'../fig/TLSexampleA.png');
 Xtls = X;
 Vtls = V;
 %% Make Latex Results Table

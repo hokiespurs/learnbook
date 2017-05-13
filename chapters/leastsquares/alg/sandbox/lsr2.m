@@ -141,15 +141,18 @@ switch lstype
     case 1
         lsrfun = @(x,y) lsrlin(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
             JybFunction,scalecov,isverbose);
-    case {2,5}
+    case 2
         lsrfun = @(x,y) lsrnlin(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
-            JybFunction,JyxFunction,scalecov,maxiter,isverbose);
+            JybFunction,[],scalecov,maxiter,isverbose);
     case 3
         lsrfun = @(x,y) lsrrobustlin(x,y,modelfun,betaCoef0,betacoef0cov,...
             JybFunction,scalecov,isverbose,robustWgtFun,robustTune);
     case 4
         lsrfun = @(x,y) lsrrobustnlin(x,y,modelfun,betaCoef0,...
             JybFunction,robustWgtFun,robustTune,maxiter,isverbose);
+    case 5
+        lsrfun = @(x,y) lsrnlin(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
+            JybFunction,JyxFunction,scalecov,maxiter,isverbose);
 end
 
 %% Compute Least Squares (optionally use ransac)
@@ -304,7 +307,8 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrnlin(x,y,modelfun,betaCoef0
         else
             covX = Sx;
         end
-       Robs = covX * B' * W * V; 
+       Robs = covX * B' * W * V;
+       ErrorModelInfo.Robs = Robs;
     end
     Q = inv(J'*W*J);              % cofactor
     if scalecov                   % option to not scale covariance
@@ -325,7 +329,6 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrnlin(x,y,modelfun,betaCoef0
     ErrorModelInfo.dof = dof;
     ErrorModelInfo.betacoef = betacoef;
     ErrorModelInfo.R = V;
-    ErrorModelInfo.Robs = Robs;
     ErrorModelInfo.So2 = So2;
     ErrorModelInfo.Q = Q;
     ErrorModelInfo.CovB = Sx;

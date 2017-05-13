@@ -1,13 +1,13 @@
 %% CONSTANTS for plane fitting Nx(x-x0)+Ny(y-y0)+Nz(z-z0) = 0
-rng(1);
+rng(10);
 NOBS = 50;
 XRANGE = [0 100];
 YRANGE = [0 100];
 TRUEB = [2 1 5]';
 
-NOISEMAGNITUDEX = 0;
-NOISEMAGNITUDEY = 0;
-NOISEMAGNITUDEZ = 10;
+NOISEMAGNITUDEX = 10;
+NOISEMAGNITUDEY = 10;
+NOISEMAGNITUDEZ = 20;
 
 XNOISEREPORTEDSTDNOISE = 0.1;
 YNOISEREPORTEDSTDNOISE = 0.1;
@@ -44,10 +44,31 @@ x = xtrue + xnoise;
 y = ytrue + ynoise;
 z = ztrue + znoise;
 
+%% Linear unweighted
+X = [x y];
+Y = z;
+[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr2(X,Y,planezval,GUESSB,'verbose',true);
+
+%plot
+f5=figure(5);clf;hold on
+f5.Name = 'Nonlinear Unweighted';
+set(f5,'WindowStyle','docked')
+% for i=1:numel(x)
+%     plot3([x(i) xtrue(i)],[y(i) ytrue(i)],[z(i) ztrue(i)],'b.-')
+% end
+plot3(x,y,z,'b.')
+
+PLOTZ = planezval(TRUEB,[PLOTX' PLOTY']);
+fill3(PLOTX,PLOTY,PLOTZ,'g')
+alpha 0.2
+CALCZ = planezval(betacoef,[PLOTX' PLOTY']);
+fill3(PLOTX,PLOTY,CALCZ,'r')
+alpha 0.2
+
 %% Nonlinear unweighted
 X = [x y z];
 Y = zeros(size(x));
-[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr2(X,Y,planeval0,GUESSB,'type','total','verbose',true);
+[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr2(X,Y,planeval0,GUESSB,'type','nonlinear','verbose',true);
 
 %plot
 f5=figure(5);clf;hold on
@@ -66,7 +87,7 @@ fill3(PLOTX,PLOTY,CALCZ,'r')
 alpha 0.2
 
 %% Total
-[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(X,Y,planeval0,GUESSB,...
+[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr2(X,Y,planeval0,GUESSB,...
     'type','total','verbose',true);
 % test plot
 CALCZ = planezval(betacoef,[PLOTX' PLOTY']);
