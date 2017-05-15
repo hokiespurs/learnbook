@@ -1,4 +1,4 @@
-function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,modelfun,varargin)
+function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr2(x,y,modelfun,varargin)
 % LSR Leasr Squares Regression
 % Inputs:
 %   - x              : Predictor variables
@@ -27,12 +27,13 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,modelfun,varargin)
 %   - 'chi2alpha'            : 0.05 (default), alpha value for confidence
 %   - 'RobustWgtFun'         : Robust Weight Function
 %   - 'Tune'                 : Robust Wgt Tuning Function
-%   - 'ransac'               : optional structure with ransac parameters
 
 %% Input Parsing/Checks
 % Get constants from default parameters
 narginchk(3,inf);
 nObsEqns = numel(y);
+nObservations = size(x,1);
+nObsEqnPerObservation = nObsEqns/nObservations;
 nPredictors = numel(x);
 nBetacoef = calcNbetacoef(modelfun,x); %throws error if bad modelfun
 
@@ -50,7 +51,6 @@ defaultScaleCov     = true;
 defaultMaxIter      = 100;
 defaultVerbose      = false;
 defaultDerivstep    = eps^(1/3);
-defaultRansac       = [];
 
 % expected Values
 expectedType = {'ols','wls','gls','lin','linear',...
@@ -100,14 +100,13 @@ addParameter(p,'scaleCov'    ,defaultScaleCov     ,checkScaleCov);
 addParameter(p,'maxiter'     ,defaultMaxIter      ,checkMaxIter);
 addParameter(p,'verbose'     ,defaultVerbose      ,checkVerbose);
 addParameter(p,'derivstep'   ,defaultDerivstep    ,checkDerivStep);
-addParameter(p,'ransac'      ,defaultRansac       ,checkRansac);
 
 parse(p,x,y,modelfun,varargin{:});
 
 ErrorModelInfo.parser = p; % include function input in metadata output
 
 % get variables out of structure
-betaCoef0 = p.Results.betaCoef0;
+betaCoef0 = p.Results.betaCoef0(:);
 maxiter = p.Results.maxiter;
 isverbose = p.Results.verbose;
 scalecov = p.Results.scaleCov;
@@ -129,11 +128,10 @@ lstype = getlstype(p.Results.type,modelfun,betaCoef0,x);
 
 dolstypechecks(lstype,p);
 
-[ransacparams,doransac] = getRansac(p.Results.ransac);
 [Sx, ~] = getCovariance(lstype,p.Results.weights,x);
 
 if isverbose
-    printPreSummary(lstype,ransacparams,p,nBetacoef);
+    printPreSummary(lstype,p,nBetacoef,nObsEqns);
 end
 
 %% Make function handle for Specific Least Squares Function Depending
@@ -155,16 +153,12 @@ switch lstype
             JybFunction,JyxFunction,scalecov,maxiter,isverbose);
 end
 
-%% Compute Least Squares (optionally use ransac)
-if ~doransac
-    [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrfun(x,y);
-else
-    [betacoef,R,J,CovB,MSE,ErrorModelInfo] = calcransac(lsrfun,x,y,ransacparams);
-end
+%% Compute Least Squares
+[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrfun(x,y);
 
 end
 
-function printPreSummary(lstype,ransacparams,p,nBetacoef)
+function printPreSummary(lstype,p,nBetacoef,nObsEqns)
 %% Print output to the screen summarizing least squares regression params
 nObsEqns = numel(p.Results.y);
 nPredictors = numel(p.Results.x);
@@ -429,19 +423,6 @@ if isverbose
 end
 end
 
-function [ransacparams,doransac] = getRansac(ransac)
-% input a possible ransac structure and return all the variables needed
-
-ransacparams=[];
-doransac = false;
-end
-
-function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = calcransac(lsrfun,x,y,ransacparams)
-% do ransac parameter estimation
-
-[betacoef,R,J,CovB,MSE,ErrorModelInfo] = v2vars(ones(6,1));
-end
-
 function dolstypechecks(lstype,p)
 %% throw a bunch of errors/warnings depending on the parameters input
 % see flowchart for summary of this
@@ -636,24 +617,6 @@ if isCovariance(Sx,nObsEqns) || isCovariance(Sx,nPredictors)
     isvalid = true;
 end
 
-end
-
-function isvalid = isCovariance(C,ndim)
-% check if a covariance matrix is valid
-isvalid = false;
-if nargin==2 && size(C,1)~=ndim
-    %     warning('Covariance matrix must be %.0fx%.0f',ndim,ndim);
-elseif ~issymmetric(C)
-    %     warning('Covariance matrix must be Symmetric');
-else
-    [~,D]=eig(C);
-    eigenvals = diag(D);
-    if sum(eigenvals<0)>0
-        %   warning('Covariance matrix must be positive semi-definite');
-    else
-        isvalid = true;
-    end
-end
 end
 
 function [Sx, iscovariance] = getCovariance(lstype,weights,x)
