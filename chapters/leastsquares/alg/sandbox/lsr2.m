@@ -18,13 +18,13 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr2(x,y,modelfun,varargin)
 %   - 4th input / 'betacoef0': Initial coefficient values
 %   - 'type'                 : 'linear/ols/wls/gls','nonlinear'(default),'tls'
 %   - 'beta0'                : required vector for nonlinear and tls
-%   - 'stochastic'           : [empty] (default), vector (weights), covariance matrix (S)
+%   - 'weights'              : [empty] (default), vector (weights), covariance matrix (S)
 %   - 'AnalyticalJacobian'   : [empty] (default), optional Jfun(beta,x)
 %   - 'AnalyticalBfunction'  : [empty] (default), optional Bfun(beta,x)
 %   - 'noscale'              : scale covariance...false (default), true 
 %   - 'beta0Covariance'      : [empty] (default), (m x m) covariance
 %   - 'betacoef0asObs'       : false (default), option to use guess in modelfun
-%   - 'chi2alpha'            : 0.05 (default), alpha value for confidence
+%   - 'chi2alpha'            : 0.01 (default), alpha value for confidence
 %   - 'RobustWgtFun'         : Robust Weight Function
 %   - 'Tune'                 : Robust Wgt Tuning Function
 
@@ -36,6 +36,7 @@ nObservations = size(x,1);
 nObsEqnPerObservation = nObsEqns/nObservations;
 nPredictors = numel(x);
 nBetacoef = calcNbetacoef(modelfun,x); %throws error if bad modelfun
+ndof = nObsEqns - nBetacoef;
 
 % default values
 defaultBetaCoef0    = [];
@@ -45,7 +46,7 @@ defaultBetaCoef0Cov = [];
 defaultJacobianYB   = [];
 defaultJacobianYX   = [];
 defaultRobustWgtFun = [];
-defaultTune         = false;
+defaultTune         = [];
 defaultchi2alpha    = 0.05;
 defaultScaleCov     = true;
 defaultMaxIter      = 100;
@@ -74,10 +75,9 @@ checkRobustWgtFun = @(X) checkRobust(X,y);
 checkTune         = @(X) isnumeric(X);
 checkChi2alpha    = @(X) isnumeric(X) && isscalar(X) && X>0 && X<1;
 checkScaleCov     = @(X) islogical(X);
-checkMaxIter      = @(X) isinteger(X) && X>0;
+checkMaxIter      = @(X) mod(X,1) == 0 && X>0;
 checkVerbose      = @(X) islogical(X);
 checkDerivStep    = @(X) isnumeric(X) && isscalar(X) && X>0;
-checkRansac       = @(X) isstruct(X);
 
 % parse inputs
 p = inputParser;
@@ -124,11 +124,11 @@ else
     JyxFunction = p.Results.JacobianYX;
 end
 %% Determine least squares type and do some checks of input values
-lstype = getlstype(p.Results.type,modelfun,betaCoef0,x);
+lstype = getlstype(p.Results.type,modelfun,betaCoef0,x,p);
 
 dolstypechecks(lstype,p);
 
-[Sx, ~] = getCovariance(lstype,p.Results.weights,x);
+[Sx, isinputcovariance] = getCovariance(lstype,p.Results.weights,x);
 
 if isverbose
     printPreSummary(lstype,p,nBetacoef,nObsEqns);
@@ -156,6 +156,37 @@ end
 %% Compute Least Squares
 [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrfun(x,y);
 
+%% Do Chi2 Test if covariance and linear/nonlinear
+if isinputcovariance  
+    chi2 = ndof * MSE;
+    chi2low  = chi2inv(chi2alpha/2  , ndof);
+    chi2high = chi2inv(1-chi2alpha/2, ndof);
+    if chi2low<chi2 && chi2<chi2high
+       ErrorModelInfo.chi2.pass = true;
+       passfailstr = 'PASS';
+    else
+        ErrorModelInfo.chi2.pass = false;
+        passfailstr = 'FAIL';
+    end
+    ErrorModelInfo.chi2.alpha          = chi2alpha;
+    ErrorModelInfo.chi2.calculatedchi2 = chi2;
+    ErrorModelInfo.chi2.chi2low        = chi2low;
+    ErrorModelInfo.chi2.chi2high       = chi2high;
+    if isverbose
+        fprintf('\n\tCHI^2 GOODNESS OF FIT TEST (Significance=%.2f, dof=%.0f, So2=%.3f)\n',chi2alpha,ndof,MSE);
+        fprintf('\t  Ho %.3f == 1\n',MSE);
+        fprintf('\t  H1 %.3f =/= 1\n',MSE);
+        fprintf('\t  Statistical Test : (%.3f < %.3f < %.3f)\n',chi2low/ndof,chi2/ndof,chi2high/ndof);
+        if scalecov && ErrorModelInfo.chi2.pass % scale but it passed test 
+            fprintf('\t  **%s**  * Test Passed, consider setting ''scalecov'' == false\n',passfailstr);
+        elseif ~scalecov && ~ErrorModelInfo.chi2.pass % no scale but didnt pass
+            fprintf('\t  **%s**  * Test Failed, consider setting ''scalecov'' == true\n',passfailstr);
+        else
+            fprintf('\t  **%s**  \n',passfailstr);
+        end
+    end
+end
+
 end
 
 function printPreSummary(lstype,p,nBetacoef,nObsEqns)
@@ -179,7 +210,7 @@ switch lstype
 end
 
 fprintf('\t # of Observation Equations : %.0f\n',nObsEqns);
-fprintf('\t # of Predictor Variables   : %.0f\n',nPredictors);
+fprintf('\t # of Predictor Variables   : [%.0f x %.0f]\n',size(p.Results.x));
 fprintf('\t # of Beta Coefficients     : %.0f\n',nBetacoef);
 fprintf('\t # of Degrees of Freedom    : %.0f\n',ndof);
 
@@ -190,51 +221,93 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrrobustlin(x,y,...
     robustWgtFun,robustTune)
 %% Calculate Robust Linear Least Squares
 if isverbose
-   fprintf('LINEAR ROBUST ITERATIONS\n');
-   fprintf('Iteration\t\tSo2\n');
+    n = calcNbetacoef(modelfun,x);  % number of unknowns
+    fprintf('LINEAR ROBUST\n');
+    fprintf('\niter :        So2        ');
+    fprintf('         betacoef(%.0f)',1:n);
+    fprintf('\n');
 end
 %initialize while loop
 dMSE = 1;
 lastMSE = inf;
 iter = 0;
+MSETHRESH = 1e-10;
+MAXROBUSTITER = 200;
+
 W = ones(numel(y),1);
-while dMSE>0 && iter<100
-[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrlin(x,y,modelfun,betaCoef0,W,betacoef0cov,...
-            JybFunction,JyxFunction,scalecov,maxiter,false);
-        dMSE = MSE-lastMSE;
-        lastMSE = MSE;
-        iter = iter+1;
-        if isverbose
-           fprintf('   %.0f  \t\t %.2f\n',MSE); 
-        end
-        W = robustWgtFun(R,robustTune);
+while iter<MAXROBUSTITER && abs(dMSE)>MSETHRESH
+    Sx = diag(1./W);
+    [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrlin(x,y,modelfun,...
+    betaCoef0,Sx,betacoef0cov,JybFunction,scalecov,false);
+    dMSE = lastMSE-MSE;
+    lastMSE = MSE;
+    iter = iter+1;
+%     SigmaR = std(R); % Not Robust to Outliers
+    SigmaR = median(abs(R))*0.6745; %estimate std using median
+    %leverage and hat in robust least squares according to matlab
+    % Weights points low that are outliers in the x dimension
+    % https://www.mathworks.com/help/stats/robustfit.html
+    % https://www.mathworks.com/help/stats/hat-matrix-and-leverage.html
+    H = x*inv(x.'*x)*x.'; %Hat Matrix
+    h = diag(H); %leverage
+    
+    Rnormalized = R./(robustTune * SigmaR .* sqrt(1-h));
+    W = robustWgtFun(Rnormalized);
+    W(W<=eps)=eps;
+    if isverbose
+        fprintf('%3.0f : ',iter);
+        fprintf('%20.10f', MSE);
+        fprintf('%20.10f', betacoef);
+        fprintf('\n');
+    end
 end
 
 end
 
-function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrrobustnlin(x,y,...
-    modelfun,betaCoef0,betacoef0cov,JybFunction,scalecov,isverbose,...
-    robustWgtFun,robustTune)
-%% Calculate Robust Linear Least Squares
+function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrrobustnlin(x,y,modelfun,betaCoef0,...
+            JybFunction,robustWgtFun,robustTune,maxiter,isverbose)
+%% Calculate Robust Nonlinear Least Squares
+scalecov = false;
+JyxFunction = [];
+betacoef0cov = [];
+
 if isverbose
-   fprintf('LINEAR ROBUST ITERATIONS\n');
-   fprintf('    Iteration\t\tSo2\n');
+    n = calcNbetacoef(modelfun,x);  % number of unknowns
+    fprintf('LINEAR ROBUST\n');
+    fprintf('\niter :        So2        ');
+    fprintf('         betacoef(%.0f)',1:n);
+    fprintf('\n');
 end
 %initialize while loop
 dMSE = 1;
 lastMSE = inf;
 iter = 0;
+MSETHRESH = 1e-10;
+MAXROBUSTITER = 200;
 W = ones(numel(y),1);
-while dMSE>0 && iter<100
-[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrnlin(x,y,modelfun,betaCoef0,W,betacoef0cov,...
+while iter<MAXROBUSTITER && abs(dMSE)>MSETHRESH
+    Sx = diag(1./W);
+    [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrnlin(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
             JybFunction,JyxFunction,scalecov,maxiter,false);
-        dMSE = MSE-lastMSE;
-        lastMSE = MSE;
-        iter = iter+1;
-        if isverbose
-           fprintf('ROBUST: %.0f  \t\t %.2f\n',MSE); 
-        end
-        W = robustWgtFun(R,robustTune);
+    dMSE = lastMSE-MSE;
+    lastMSE = MSE;
+    iter = iter+1;
+%     SigmaR = std(R); % Not Robust to Outliers
+    SigmaR = median(abs(R))*0.6745; %estimate std
+    H = x*inv(x.'*x)*x.'; %Hat Matrix
+    h = diag(H); %leverage
+    %leverage and hat in robust least squares according to matlab
+    % https://www.mathworks.com/help/stats/robustfit.html
+    % https://www.mathworks.com/help/stats/hat-matrix-and-leverage.html
+    Rnormalized = R./(robustTune * SigmaR .* sqrt(1-h));
+    W = robustWgtFun(Rnormalized);
+    W(W<=eps)=eps;
+    if isverbose
+        fprintf('%3.0f : ',iter);
+        fprintf('%20.10f', MSE);
+        fprintf('%20.10f', betacoef);
+        fprintf('\n');
+    end
 end
 
 end
@@ -275,9 +348,9 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrnlin(x,y,modelfun,betaCoef0
             
             if ~isempty(betacoef0cov)
                 if istls
-                    [J,K,W,B]=addBetacoef0TLS(J,K,B,Sx,betacoef0,betacoef0cov,betacoef);
+                    [J,K,W,B]=addBetacoef0TLS(J,K,B,Sx,betaCoef0,betacoef0cov,betacoef);
                 else
-                    [J,K,W]=addBetacoef0Nlin(J,K,covY,betacoef0,betacoef0cov,betacoef);
+                    [J,K,W]=addBetacoef0Nlin(J,K,Sx,betaCoef0,betacoef0cov,betacoef);
                 end
             end
         
@@ -475,11 +548,11 @@ for i=1:numel(illegalFields)
     end
 end
     % throw warnings
-    [~, iscovariance] = getCovariance([],p.Results.weights,[]);
+    [~, isinputcovariance] = getCovariance([],p.Results.weights,[]);
     if any(lstype == [1 2 5])
-        if ~iscovariance && any(strcmp('chi2alpha',inputParams))
+        if ~isinputcovariance && any(strcmp('chi2alpha',inputParams))
             warning('chi2alpha is meaningless without input covariance');
-        elseif ~iscovariance && any(strcmp('betaCoef0Cov',inputParams))
+        elseif ~isinputcovariance && any(strcmp('betaCoef0Cov',inputParams))
             warning('betaCoef0Cov is meaningless without input covariance');
         end
     end
@@ -488,7 +561,7 @@ end
     end
 end
 
-function lsrtype = getlstype(inputtype,modelfun,betaCoef0,x)
+function lsrtype = getlstype(inputtype,modelfun,betaCoef0,x,p)
 %% Determine the type of least squares
 % lstype 
 % 1: linear
@@ -496,12 +569,21 @@ function lsrtype = getlstype(inputtype,modelfun,betaCoef0,x)
 % 3: robust linear
 % 4: robust nonlinear
 % 5: total
-
+isRobust = ~any(strcmp(p.UsingDefaults,'RobustWgtFun'));
+h = p.Results.derivstep;
 if isempty(inputtype) % either linear or nonlinear
-    if isempty(betaCoef0) || isModelLinear(modelfun,betaCoef0,x)
-        lsrtype = 1;
+    if isempty(betaCoef0) || isModelLinear(modelfun,betaCoef0,x,h)
+        if isRobust
+            lsrtype = 3;
+        else 
+            lsrtype = 1;
+        end
     else
-        lsrtype = 2;
+        if isRobust
+            lsrtype = 4;
+        else 
+            lsrtype = 2;
+        end
     end
 elseif any(strcmp(inputtype,{'ols','wls','gls','lin','linear'}))
     lsrtype = 1;
@@ -510,7 +592,7 @@ elseif any(strcmp(inputtype,{'nlin','nonlinear'}))
 elseif any(strcmp(inputtype,{'total','tls'}))
     lsrtype = 5;
 elseif any(strcmp(inputtype,{'robust'})) %nonlinear and linear robust 
-    if isempty(betaCoef0) || isModelLinear(modelfun,betaCoef0,x)
+    if isempty(betaCoef0) || isModelLinear(modelfun,betaCoef0,x,h)
         lsrtype = 3; %assume no beta0 means linear
     else
         lsrtype = 4;
@@ -543,13 +625,18 @@ end
 end
 
 %% IsValid Functions
-function isLinear = isModelLinear(modelfun,betacoef,x)
+function isLinear = isModelLinear(modelfun,betacoef,x,h)
 %% Compute the Numerical Hessian to determine linearity of modelfun
-h = eps^(1/3); % optimal for central difference
-Jfun = @(bn)(modelfun(bn,x(1,:)));
-J = @(b) (calcPartials(Jfun,betacoef',h));
-H = calcPartials(J,betacoef',h); %calculate hessian
-isLinear = ~any(H(:));
+%check for each point
+for i=1:size(x,1)
+    Jfun = @(bn)(modelfun(bn,x(i,:)));
+    J = @(b) (calcPartials(Jfun,b,h));
+    H = calcPartials(J,betacoef',h); %calculate hessian
+    isLinear = ~any(H(:));
+    if ~isLinear
+       break; 
+    end
+end
 end
 
 function [robustTune, robustWgtFun, isvalid] = getRobust(weightfun, tune)
@@ -558,23 +645,44 @@ function [robustTune, robustWgtFun, isvalid] = getRobust(weightfun, tune)
 % return the tune and weightfun
 
 robustTune = tune;
+robustWgtFun = weightfun;
+
 inputWgtFun = weightfun;
 if ischar(inputWgtFun)
     isvalid = true;
     switch inputWgtFun
-        case 'test'
-            robustWgtFun = @(x)(1+x);
-            defaultTune = 0.1;
-        case 'test2'
-            robustWgtFun = @(x)(1+x);
-            defaultTune = 0.2;
+        case 'andrews'
+            robustWgtFun = @(x) (abs(x)<pi) .* sin(x)./x;
+            defaultTune = 1.339;
+        case 'bisquare'
+            robustWgtFun = @(x) (abs(x)<1) .* (1-x.^2).^2;
+            defaultTune = 4.685;
+        case 'cauchy'
+            robustWgtFun = @(x) 1./(1+x.^2);
+            defaultTune = 2.385;
+        case 'fair'
+            robustWgtFun = @(x) 1./(1+abs(x));
+            defaultTune = 1.400;
+        case 'huber'
+            robustWgtFun = @(x) 1./(max(1,abs(x)));
+            defaultTune = 1.345;
+        case 'logistic'
+            robustWgtFun = @(x) tanh(x)./x;
+            defaultTune = 1.205;
+        case 'talwar'
+            robustWgtFun = @(x) double(abs(x)<1);
+            defaultTune = 2.795;
+        case 'welsch'
+            robustWgtFun = @(x) exp(-1*x.^2);
+            defaultTune = 2.985;
         otherwise
             isvalid = false; %don't know this function
     end
     if isempty(robustTune)
         robustTune = defaultTune;
     end
-else %user explicitly input a robust weight function
+elseif ~isempty(weightfun)
+ %user explicitly input a robust weight function
     robustWgtFun = inputWgtFun;
     if isempty(robustTune)
        error('User Input robustWgtFun must have a ''Tune'' Value input'); 
@@ -619,7 +727,7 @@ end
 
 end
 
-function [Sx, iscovariance] = getCovariance(lstype,weights,x)
+function [Sx, isinputcovariance] = getCovariance(lstype,weights,x)
 % return a covariance depending on the type of input
 % vector is "weights", where covariance is inverse of those on the diagonal
 % matrix is assumed to be a covariance
@@ -631,13 +739,13 @@ if isempty(weights)
     else
         Sx = speye(nEqn);
     end
-    iscovariance = false;
+    isinputcovariance = false;
 elseif isvector(weights) %matrix is weights
     Sx = diag(1./weights);
-    iscovariance = false;
+    isinputcovariance = false;
 else %matrix is covariance
     Sx = weights;
-    iscovariance = true;
+    isinputcovariance = true;
 end
 
 end
@@ -695,29 +803,7 @@ end
 
 end
 
-function hx = bumphdiag(x,n)
-    % pad a matrix with 0s while shifting n rows at a time over on blkdiag
-    % This is useful when doing partial derivatives wrt predictor variables
-    %
-    % ie, with n=1
-    %  1 2 3       1 2 3 0 0 0 0 0 0 0 0 0
-    %  4 5 6  ->   0 0 0 4 5 6 0 0 0 0 0 0
-    %  7 8 9       0 0 0 0 0 0 7 8 9 0 0 0
-    %  2 4 6       0 0 0 0 0 0 0 0 0 2 4 6
-    %
-    % ie, with n=2
-    %  1 2 3       1 2 3 0 0 0
-    %  4 5 6  ->   4 5 6 0 0 0
-    %  7 8 9       0 0 0 7 8 9
-    %  2 4 6       0 0 0 2 4 6
-    %
-    [M,N]=size(x);
-    irow = kron((1:M)',ones(1,N));
-    icol = nan(N,M/n);
-    icol(:) = 1:numel(icol);
-    icol = kron(icol.',ones(n,1));
-    hx = sparse(irow,icol,x);
-end
+
 
 function K = calcK(modelfun,betacoef,x,y)
 % calculate the K matrix for each iteration
