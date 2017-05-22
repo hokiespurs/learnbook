@@ -7,18 +7,15 @@ nTotalPossible = nchoosek(nTotal,nElements);
 if nDesired>nTotalPossible
    error('impossible to get that number of unique elements'); 
 end
-if nTotalPossible*nElements < 1e6
-    allPossible = nchoosek(1:nTotal,nElements);
-    indSubset = allPossible(randperm(nTotal,nDesired),:);
-else % using the above will take up a lot of memory
-    indSubset = nan(nDesired,nElements);
-    iRow = 0;
-    while iRow<nDesired
-        testSubset = sort(randperm(nTotal,nElements));
-        if ~any(all(testSubset==indSubset,2))
-            iRow = iRow + 1;
-            indSubset(iRow,:)=testSubset;
-        end
+
+indSubset = nan(nDesired,nElements);
+iRow = 0;
+
+while iRow<nDesired
+    testSubset = sort(randperm(nTotal,nElements));
+    if ~any(all(testSubset==indSubset,2))
+        iRow = iRow + 1;
+        indSubset(iRow,:)=testSubset;
     end
 end
 

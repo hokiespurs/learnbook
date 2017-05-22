@@ -3,7 +3,7 @@ function testlsrnlinrobust
 RANDSEED = 14;
 TRUEBETA = [.2; .4];
 
-NSAMPLES = 20;
+NSAMPLES = 200;
 
 NOUTLIERS = 5;
 OUTLIERMAG = 20;
@@ -77,5 +77,12 @@ ROBTYPE = 8;
 p1 = plot(ix,YEXPEQN(betacoef1,ix),'r-','linewidth',3);
 p2 = plot(ix,YEXPEQN(betacoef2,ix),'m-','linewidth',3);
 p3 = plot(ix,YEXPEQN(betacoef3,ix),'c-','linewidth',2);
+
+%% Test Niterations and Thresh
+[betacoef2,R,J,CovB,MSE,ErrorModelInfo] = lsr2(valX,valY,YEXPEQN,TRUEBETA,'verbose',OUTPUTVERBOSE,...
+    'RobustWgtFun','andrews');
+% Check Robust
+[betacoef3,R,J,CovB,MSE,ErrorModelInfo] = lsr2(valX,valY,YEXPEQN,TRUEBETA,'verbose',OUTPUTVERBOSE,...
+    'RobustWgtFun',robustTypes{ROBTYPE},'RobustThresh',1e-10);
 
 end

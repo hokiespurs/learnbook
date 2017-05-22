@@ -1,27 +1,60 @@
 function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,modelfun,varargin)
-% LSR2 Short summary of this function goes here
-%   Detailed explanation goes here
+% LSR Least Squares Regression For Linear, Nonlinear, Robust, and Total LSR
+%   LSR(X,Y,MODELFUN,VARARGIN) performs a least squares regression to
+%   estimate the beta coefficients.  The Jacobian and partial derivatives
+%   are computed using finite differencing.  This function mimics the
+%   performance on NLINFIT without the reliance on the Statistics and 
+%   Machine Learning Toolbox.  This function also adds functionality to:
+%    o perform linear least squares
+%    o detect linearity from modelfun using finite differencing Hessian
+%    o perform total least squares
+%    o input analytical jacobians
+%    o automatically perform chi2 goodness of fit test
+%    o disable automatic covariance scaling
+%    o add an estimate of the beta coefficients as observation equations
+% 
+%   * See 'LSR.pdf' for more a more detailed description%   
+%   * See 'exampleLsr.m' for more example uses
 % 
 % Inputs:
-%   - x        : Size : Class : Description of variable goes here
-%   - y        : Size : Class : Description of variable goes here
-%   - modelfun : Size : Class : Description of variable goes here
-%   - varargin : Size : Class : Description of variable goes here
-% 
+%   - x              : Predictor variables
+%   - y              : Response values
+%   - modelfun       : Model function handle @modelfun(betacoef,x)
+%   - betacoef0      : Initial coefficient values
+%
+% Optional Parameters:
+%   - 'betacoef0'            : Initial coefficient values
+%   - 'type'                 : Type of Regression
+%   - 'weights'              : Vector (weights) or Covariance matrix
+%   - 'AnalyticalJacobian'   : Function @(b,x) for Jacobian wrt betacoef
+%   - 'AnalyticalBfunction'  : Function @(b,x) for Jacobian wrt x
+%   - 'noscale'              : true(false)/false to scale covariance matrix 
+%   - 'betaCoef0Cov'         : covariance of beta0 coefficient values
+%   - 'chi2alpha'            : alpha values for confidence 
+%   - 'RobustWgtFun'         : Robust Weight Function
+%   - 'Tune'                 : Robust Wgt Tuning Function
+%   - 'RobustThresh'         : Threshold for Robust Iterations
+%   - 'RobustMaxIter'        : Maximum iterations in Robust Least Squares
+%   - 'maxiter'              : Maximum iterations for Nonlinear
+%   - 'verbose'              : true/false print verbose output to screen
+%   - 'DeriveStep'           : Difference for numerical jacobian
+%
 % Outputs:
-%   - betacoef       : Size : Class : Description of variable goes here
-%   - R              : Size : Class : Description of variable goes here
-%   - J              : Size : Class : Description of variable goes here
-%   - CovB           : Size : Class : Description of variable goes here
-%   - MSE            : Size : Class : Description of variable goes here
-%   - ErrorModelInfo : Size : Class : Description of variable goes here
-% 
+%   - betacoef       : Estimated regression coefficients
+%   - R              : Residuals
+%   - J              : Jacobian
+%   - CovB           : Estimated Variance Covariance Matrix
+%   - MSE            : Mean Squared Error (Computed Reference Variance)
+%   - ErrorModelInfo : Information about error model
+%
 % Examples:
+%   % Linear Regression
 %   b = [2 1];
-%   x = rand(10,1);
+%   x = rand(10,1)*10;
 %   ymxplusb = @(b,x) b(1)*x + b(2);
-%   y = ymxplusb(b,x)+randn(10,1)*0.05;
+%   y = ymxplusb(b,x)+randn(10,1)*1;
 %   betacoef = lsr(x,y,ymxplusb);
+%   figure(1);clf;plot(x,y,'b.');hold on;plot([0 10],ymxplusb(b,[0 10]));
 %
 % Dependencies:
 %   - n/a
@@ -33,37 +66,6 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,modelfun,varargin)
 % Email         : richie@cormorantanalytics.com    
 % Date Created  : 17-Mar-2017    
 % Date Modified : 17-May-2017    
-
-% LSR Leasr Squares Regression
-% Inputs:
-%   - x              : Predictor variables
-%   - y              : Response values
-%   - modelfun       : Model function handle @modelfun(betacoef,X)
-%   - options        : Structure with optional parameters
-% 
-% Outputs:
-%   - betacoef       : Estimated regression coefficients
-%   - R              : Residuals
-%   - J              : Jacobian
-%   - CovB           : Estimated Variance Covariance Matrix
-%   - MSE            : Mean Squared Error (Computed Reference Variance)
-%   - ErrorModelInfo : Information about error model
-% 
-% Optional Parameters:
-%   - 4th input / 'betacoef0': Initial coefficient values
-%   - 'type'                 : 'linear/ols/wls/gls','nonlinear'(default),'tls'
-%   - 'beta0'                : required vector for nonlinear and tls
-%   - 'weights'              : [empty] (default), vector (weights), covariance matrix (S)
-%   - 'AnalyticalJacobian'   : [empty] (default), optional Jfun(beta,x)
-%   - 'AnalyticalBfunction'  : [empty] (default), optional Bfun(beta,x)
-%   - 'noscale'              : scale covariance...false (default), true 
-%   - 'beta0Covariance'      : [empty] (default), (m x m) covariance
-%   - 'betacoef0asObs'       : false (default), option to use guess in modelfun
-%   - 'chi2alpha'            : 0.01 (default), alpha value for confidence
-%   - 'RobustWgtFun'         : Robust Weight Function
-%   - 'Tune'                 : Robust Wgt Tuning Function
-%   - 'RobustThresh'         : Threshold for Robust Iterations
-%   - 'RobustMaxIter'        : Maximum iterations in Robust Least Squares
 
 %% Input Parsing/Checks
 % Get constants from default parameters
@@ -140,7 +142,7 @@ addParameter(p,'chi2alpha'    ,defaultchi2alpha    ,checkChi2alpha);
 addParameter(p,'scaleCov'     ,defaultScaleCov     ,checkScaleCov);
 addParameter(p,'maxiter'      ,defaultMaxIter      ,checkMaxIter);
 addParameter(p,'verbose'      ,defaultVerbose      ,checkVerbose);
-addParameter(p,'derivstep'    ,defaultDerivstep    ,checkDerivStep);
+addParameter(p,'DerivStep'    ,defaultDerivstep    ,checkDerivStep);
 addParameter(p,'RobustMaxIter',defaultRobustMaxIter,checkRobustMaxIter);
 addParameter(p,'RobustThresh' ,defaultRobustThresh ,checkRobustThresh);
 
@@ -158,12 +160,12 @@ robustThresh  = p.Results.RobustThresh;
 
 betacoef0cov = p.Results.betaCoef0Cov;
 if isempty(p.Results.JacobianYB)
-    JybFunction = @(b,x) calcJYB(modelfun,b,x,p.Results.derivstep);
+    JybFunction = @(b,x) calcJYB(modelfun,b,x,p.Results.DerivStep);
 else
     JybFunction = p.Results.JacobianYB;
 end
 if isempty(p.Results.JacobianYX)
-    JyxFunction = @(b,x) calcJYX(modelfun,b,x,p.Results.derivstep);
+    JyxFunction = @(b,x) calcJYX(modelfun,b,x,p.Results.DerivStep);
 else
     JyxFunction = p.Results.JacobianYX;
 end
@@ -280,23 +282,29 @@ lastMSE = inf;
 iter = 0;
 
 W = ones(numel(y),1);
+
 while iter<robustMaxIter && abs(dMSE)>robustThresh
     Sx = spdiag(1./W);
-    [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrlin(x,y,modelfun,...
+    [betacoef,~,J,CovB,MSE,ErrorModelInfo] = lsrlin(x,y,modelfun,...
     betaCoef0,Sx,betacoef0cov,JybFunction,scalecov,false);
     dMSE = lastMSE-MSE;
     lastMSE = MSE;
     iter = iter+1;
-%     SigmaR = std(R); % Not Robust to Outliers
-    SigmaR = median(abs(R))*0.6745; %estimate std using median
+      
+    R = modelfun(betacoef,x)-y; %unweighted R
+
     %leverage and hat in robust least squares according to matlab
     % Weights points low that are outliers in the x dimension
     % https://www.mathworks.com/help/stats/robustfit.html
     % https://www.mathworks.com/help/stats/hat-matrix-and-leverage.html
-    H = x/(x.'*x)*x.'; %Hat Matrix
+    H = J/(J.'*J)*J.'; %Hat Matrix
     h = diag(H); %leverage
     
-    Rnormalized = R./(robustTune * SigmaR .* sqrt(1-h));
+    Radj = R./sqrt(1-h);
+    
+    SigmaR = sigmaMedianEstimate(Radj,size(J,2));
+    
+    Rnormalized = Radj./(robustTune * SigmaR);
     W = robustWgtFun(Rnormalized);
     W(W<=eps)=eps;
     if isverbose
@@ -306,13 +314,26 @@ while iter<robustMaxIter && abs(dMSE)>robustThresh
         fprintf('\n');
     end
 end
+CovB = MSE .* inv(J'*J); %unweighted covariance
+% warning('When performing Robust Least Squares, MSE and CovB do not match the output from matlabs nlinfit and robustfit');
+end
 
+function SigmaR = sigmaMedianEstimate(R,nX)
+% estimate sigma using the median of the residuals
+% numel(R)-nX = dof
+Rsort = sort(abs(R));
+    SigmaR = median(Rsort(max(1,nX):end)) / 0.6745;
+    
+    if SigmaR < 1e-6
+        SigmaR = 1e-6;
+    end
+    
 end
 
 function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrrobustnlin(x,y,modelfun,betaCoef0,...
             JybFunction,robustWgtFun,robustTune,maxiter,isverbose,robustMaxIter,robustThresh)
 %% Calculate Robust Nonlinear Least Squares
-scalecov = false;
+scalecov = true;
 JyxFunction = [];
 betacoef0cov = [];
 
@@ -330,19 +351,26 @@ iter = 0;
 W = ones(numel(y),1);
 while iter<robustMaxIter && abs(dMSE)>robustThresh
     Sx = spdiag(1./W);
-    [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrnlin(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
+    [betacoef,~,J,CovB,MSE,ErrorModelInfo] = lsrnlin(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
             JybFunction,JyxFunction,scalecov,maxiter,false);
     dMSE = lastMSE-MSE;
     lastMSE = MSE;
     iter = iter+1;
-%     SigmaR = std(R); % Not Robust to Outliers
-    SigmaR = median(abs(R))*0.6745; %estimate std
-    H = x/(x.'*x)*x.'; %Hat Matrix
-    h = diag(H); %leverage
+      
+    R = y - modelfun(betacoef,x); %unweighted R
+
     %leverage and hat in robust least squares according to matlab
+    % Weights points low that are outliers in the x dimension
     % https://www.mathworks.com/help/stats/robustfit.html
     % https://www.mathworks.com/help/stats/hat-matrix-and-leverage.html
-    Rnormalized = R./(robustTune * SigmaR .* sqrt(1-h));
+    H = J/(J.'*J)*J.'; %Hat Matrix
+    h = diag(H); %leverage
+    
+    Radj = R./sqrt(1-h);
+    
+    SigmaR = sigmaMedianEstimate(Radj,size(J,2));
+    
+    Rnormalized = Radj./(robustTune * SigmaR);
     W = robustWgtFun(Rnormalized);
     W(W<=eps)=eps;
     if isverbose
@@ -352,7 +380,8 @@ while iter<robustMaxIter && abs(dMSE)>robustThresh
         fprintf('\n');
     end
 end
-
+CovB = MSE .* inv(J'*J); %unweighted covariance
+% warning('When performing Robust Least Squares, MSE and CovB do not match the output from matlabs nlinfit and robustfit');
 end
 
 function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrnlin(x,y,modelfun,betaCoef0,Sx,betacoef0cov,...
@@ -430,7 +459,7 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrnlin(x,y,modelfun,betaCoef0
     Lhat = J * betacoef;          % predicted L values
     RMSE = sqrt(V'*V/m);          % RMSE
     % handle output variables
-    R = V;
+    R = sqrt(W)*V; %report weighted residuals
     CovB = Sx;
     MSE = So2;
 
@@ -499,20 +528,19 @@ V = A * X - L;                  % residuals
 So2 = V'/Sx*V/dof;              % Reference Variance V'WV/dof
 Q = inv(A'/Sx*A);               % cofactor
 if scalecov                     % option to not scale covariance
-   Sx = So2 * Q;%#ok<MINV> So2 is a scalar
+   CovB = So2 * Q;%#ok<MINV> So2 is a scalar
 else
-   Sx = Q;
+   CovB = Q;
 end
-stdX = sqrt(diag(Sx));          % std of solved unknowns
+stdX = sqrt(diag(CovB));          % std of solved unknowns
 Lhat = A * X;                   % predicted L values
 r2 = var(Lhat)/var(L);          % R^2 Skill
 RMSE = sqrt(V'*V/m);            % RMSE
 
 %assemble output variables and structure
 betacoef = X;
-R = V;
+R = sqrt(inv(Sx))*V; %report weighted residuals
 J = A;
-CovB = Sx;
 MSE = So2;
 
 ErrorModelInfo.m=m;
@@ -561,7 +589,6 @@ switch lstype
         typename = 'nonlinear';
     case 3 % robust linear
         requiredFields = {'RobustWgtFun'}; %error would have been thrown earlier if bad
-        fprintf('robust linear\n');
         illegalFields = {'weights','betaCoef0Cov',...
                          'JacobianYX','chi2alpha','scaleCov','maxiter'};
         typename = 'robust linear';
@@ -613,7 +640,7 @@ function lsrtype = getlstype(inputtype,modelfun,betaCoef0,x,p)
 % 4: robust nonlinear
 % 5: total
 isRobust = ~any(strcmp(p.UsingDefaults,'RobustWgtFun'));
-h = p.Results.derivstep;
+h = p.Results.DerivStep;
 if isempty(inputtype) % either linear or nonlinear
     if isempty(betaCoef0) || isModelLinear(modelfun,betaCoef0,x,h)
         if isRobust
