@@ -26,8 +26,8 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,modelfun,varargin)
 %   - 'betacoef0'            : Initial coefficient values
 %   - 'type'                 : Type of Regression
 %   - 'weights'              : Vector (weights) or Covariance matrix
-%   - 'AnalyticalJacobian'   : Function @(b,x) for Jacobian wrt betacoef
-%   - 'AnalyticalBfunction'  : Function @(b,x) for Jacobian wrt x
+%   - 'JacobianYB'           : Function @(b,x) for Jacobian wrt betacoef
+%   - 'JacobianYX'           : Function @(b,x) for Jacobian wrt x
 %   - 'noscale'              : true(false)/false to scale covariance matrix 
 %   - 'betaCoef0Cov'         : covariance of beta0 coefficient values
 %   - 'chi2alpha'            : alpha values for confidence 
@@ -37,7 +37,7 @@ function [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,modelfun,varargin)
 %   - 'RobustMaxIter'        : Maximum iterations in Robust Least Squares
 %   - 'maxiter'              : Maximum iterations for Nonlinear
 %   - 'verbose'              : true/false print verbose output to screen
-%   - 'DeriveStep'           : Difference for numerical jacobian
+%   - 'DerivStep'            : Difference for numerical jacobian
 %
 % Outputs:
 %   - betacoef       : Estimated regression coefficients
@@ -103,7 +103,7 @@ expectedType = {'ols','wls','gls','lin','linear',...
                 'robustnonlinear'};
 
 % Input checkFunctions
-checkX             = @(X) isnumeric(X) && size(X,1)==nObsEqns && all(~isnan(X(:)));
+checkX             = @(X) isnumeric(X) && all(~isnan(X(:)));
 checkY             = @(X) isnumeric(X) && size(X,2)==1 && all(~isnan(X(:)));
 checkModelfun      = @(X) isa(X,'function_handle');
 checkBetaCoef0     = @(X) isnumeric(X) && isvector(X) && numel(X)==nBetacoef;
@@ -174,7 +174,7 @@ lstype = getlstype(p.Results.type,modelfun,betaCoef0,x,p);
 
 dolstypechecks(lstype,p);
 
-[Sx, isinputcovariance] = getCovariance(lstype,p.Results.weights,x);
+[Sx, isinputcovariance] = getCovariance(lstype,p.Results.weights,x,y);
 
 if isverbose
     printPreSummary(lstype,p,nBetacoef);
@@ -258,10 +258,11 @@ switch lstype
         fprintf('%s\nTOTAL LEAST SQUARES\n%s\n',hline,hline);
 end
 
-fprintf('\t # of Observation Equations : %.0f\n',nObsEqns);
-fprintf('\t # of Predictor Variables   : [%.0f x %.0f]\n',size(p.Results.x));
-fprintf('\t # of Beta Coefficients     : %.0f\n',nBetacoef);
-fprintf('\t # of Degrees of Freedom    : %.0f\n',ndof);
+fprintf('\t # of Observation Equations               : %.0f\n',nObsEqns);
+fprintf('\t # of Observations                        : %.0f\n',size(p.Results.x,1));
+fprintf('\t # of Predictor Variables Per Observation : %.0f\n',size(p.Results.x,2));
+fprintf('\t # of Beta Coefficients                   : %.0f\n',nBetacoef);
+fprintf('\t # of Degrees of Freedom                  : %.0f\n',ndof);
 
 end
 
@@ -617,8 +618,22 @@ for i=1:numel(illegalFields)
             typename,strerr);
     end
 end
+%ensure the model is actually linear
+if any(lstype == [1 3])
+    nBetacoef = calcNbetacoef(p.Results.modelfun,p.Results.x);
+    testbetacoef0 = zeros(nBetacoef,1);
+    h = p.Results.DerivStep;
+    isLinear = isModelLinear(p.Results.modelfun,testbetacoef0,p.Results.x,h);
+    if ~isLinear
+        if isempty(p.Results.type) %user didnt explicitly say what type
+            error('betacoef0 must be input for a nonlinear model function');
+        else
+            warning('modelfun doesnt appear to be linear, nonlinear regression is highly recommended');
+        end
+    end
+end
     % throw warnings
-    [~, isinputcovariance] = getCovariance([],p.Results.weights,[]);
+    [~, isinputcovariance] = getCovariance([],p.Results.weights,[],[]);
     if any(lstype == [1 2 5])
         if ~isinputcovariance && any(strcmp('chi2alpha',inputParams))
             warning('chi2alpha is meaningless without input covariance');
@@ -726,6 +741,8 @@ end
 %% IsValid Functions
 function isLinear = isModelLinear(modelfun,betacoef,x,h)
 %% Compute the Numerical Hessian to determine linearity of modelfun
+% note, hessian is not shaped correctly, this just looks for any slope so
+% its ok
 %check for each point
 for i=1:size(x,1)
     Jfun = @(bn)(modelfun(bn,x(i,:)));
@@ -844,11 +861,11 @@ end
 
 end
 
-function [Sx, isinputcovariance] = getCovariance(lstype,weights,x)
+function [Sx, isinputcovariance] = getCovariance(lstype,weights,x,y)
 % return a covariance depending on the type of input
 % vector is "weights", where covariance is inverse of those on the diagonal
 % matrix is assumed to be a covariance
-nEqn = size(x,1);
+nEqn = numel(y);
 nVars = numel(x);
 if isempty(weights)
     if lstype == 5 % total least squares
@@ -905,6 +922,9 @@ function dfdxn = calcPartials(f,x,h)
 %
 % dfdxn  : partial f wrt x_n
 nObservations = numel(f(x));
+
+% [nEqnPerObs, nVals] = size(f(x));
+
 nVariables = size(x,2);
 dfdxn= nan(nObservations,nVariables);
 for i=1:nVariables
@@ -915,7 +935,8 @@ for i=1:nVariables
     ix2 = x;
     ix2(:,i)=ix2(:,i)+h/2;
     %evaluate slope
-    dfdxn(:,i) = (f(ix2)-f(ix1))/h; 
+    slope = (f(ix2)-f(ix1))/h;
+    dfdxn(:,i) = slope(:); %(:) helps for weirdly shaped Hessians
 end
 
 end

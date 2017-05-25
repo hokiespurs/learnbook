@@ -20,7 +20,7 @@ GUESSBCOV = diag([0.1 1]);
 PLOTX = [0 0 100 100];
 PLOTY = [0 100 100 0];
 %% Compute Plane Data
-% beta = [a b c d]  % ax + by + cz = d
+% beta = [a b c d]  % ax + by + c = z
 planeval0 = @(b,x)(b(1)*x(:,1) + b(2)*x(:,2) + b(3) - x(:,3));
 planezval = @(b,x)(b(1)*x(:,1) + b(2)*x(:,2) + b(3));
 
