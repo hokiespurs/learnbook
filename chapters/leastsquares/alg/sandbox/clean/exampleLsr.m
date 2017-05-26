@@ -23,7 +23,7 @@ betacoefExponential = lsr(x,y,modelfunExp,betacoef0);
 
 %plot
 xi = 0:0.1:6;
-f = figure(1);clf
+f1 = figure(1);clf
 plot(x,y,'k.','markersize',25);
 hold on
 plot(xi,modelfunLinear(betacoefLinear,xi),'r','linewidth',2);
@@ -32,7 +32,6 @@ plot(xi,modelfunPoly4(betacoefPoly4,xi),'c','linewidth',2);
 plot(xi,modelfunExp(betacoefExponential,xi),'b','linewidth',2);
 legend({'Raw Data','$y = ax + b$','$y = ax^2+bx+c$','$y = ax^4+bx^3+cx^2+dx+e$','$y = ae^{bx}$'},...
     'interpreter','latex','fontsize',14,'location','best')
-saveas(f,'basicUsage.png');
 %% Fit Model to 3D Plane (Unweighted)
 % beta = [a b c d]  % ax + by + c = z
 modelfun3Dplane = @(b,x)(b(1)*x(:,1) + b(2)*x(:,2) + b(3));
@@ -53,7 +52,7 @@ betacoefPlane = lsr(x,y,modelfun3Dplane);
 %plot
 xi = [-5 -5 5 5 -5]';
 yi = [-5 5 5 -5 -5]';
-f = figure(2);clf
+f2 = figure(2);clf
 subplot 121
 plot3(xpts,ypts,zpts,'k.');
 hold on
@@ -74,12 +73,58 @@ zlabel('Z coordinate','interpreter','latex','fontsize',14);
 view(135,35)
 
 %% Sin Wave With Known Period (Nonlinear Observation Equations)
+omega = 2*pi/10; %10 second period wave
+modelfunSinNonLinear = @(b,x) b(1)*sin(omega*x + b(2));
+modelfunSinLinear = @(b,x) b(1)*sin(omega*x)+b(2)*cos(omega*x);
+
+% generate sample data
+t = 0:0.1:100;
+truebeta = [3 pi/3];
+z = modelfunSinNonLinear(truebeta,t)+randn(size(t))*0.5;
+
 % Nonlinear
+x = t';
+y = z';
+betacoefSinNonLinear = lsr(x,y,modelfunSinNonLinear,truebeta,'verbose',true);
 
 % Linear
+betacoefSinLinear = lsr(x,y,modelfunSinLinear,'verbose',true);
+Amp = sqrt((betacoefSinLinear(1))^2+(betacoefSinLinear(2))^2);
+Phi = atan2(betacoefSinLinear(2),betacoefSinLinear(1));
 
+% Plot
+f3 = figure(3);clf;hold on;
+plot(t,modelfunSinLinear(betacoefSinLinear,t),'b-','linewidth',2);
+plot(t,z,'k.');
+legend({'Raw Data','$y = A\sin(\omega t) + B\cos(\omega t) $'},'interpreter','latex','fontsize',14)
+xlabel('Time (s)','interpreter','latex','fontsize',14);
+ylabel('Amplitude','interpreter','latex','fontsize',14);
+title('Linear Regression of Sin Wave With Known Period','interpreter','latex','fontsize',16)
 %% Different ways to weight equations
+x = [0 1 2 3 4 5 6]';
+y = [1 4 3 7 6 15 14]';
+sigmaY = [2 1 3 4 3 2 1];
 
+modelfunLinear = @(b,x) b(1)*x + b(2);
+% No weights
+betacoefNoWeight = lsr(x,y,modelfunLinear);
+% Weights as vector
+weightVector = 1./(sigmaY.^2);
+betacoefWeightVector = lsr(x,y,modelfunLinear,'Weights',weightVector);
+% Weights as Covariance Matrix
+covarianceMatrix = diag(sigmaY.^2);
+betacoefCovMatrix = lsr(x,y,modelfunLinear,'Weights',covarianceMatrix);
+
+% Plot
+xi = 0:0.1:6;
+f4 = figure(4);clf
+scatter(x,y,weightVector*200,ones(size(weightVector)),'filled');
+hold on
+plot(xi,modelfunLinear(betacoefNoWeight,xi),'r','linewidth',2);
+plot(xi,modelfunLinear(betacoefWeightVector,xi),'b','linewidth',2);
+plot(xi,modelfunLinear(betacoefCovMatrix,xi),'b','linewidth',2);
+legend({'Raw Data','No Weights','Weighted'},...
+    'interpreter','latex','fontsize',14,'location','best')
 
 %% 2D Conformal Transformation with covariances (Linear 2 Equations per Observation)
 x_coord2 = [1 2 3]; y_coord2 = [0 5 1];  % raw data 'to'
@@ -126,13 +171,104 @@ betacoef3Dconformal = lsr(x,y,modelConformal,betacoef0,'verbose',true);
 betacoef3Dconformal2 = lsr(x,y,modelConformalFixScale,betacoef0(2:end),'verbose',true);
 
 %% Linear Line with Total Least Squares
+xpts = [10 20 60 40 85];
+ypts = [0 15 23 25 40];
+covxy = blkdiag([45 -30;-30 30],[20 -10;-10 70],[80 4;4 4],[40 -13;-13 60],[30 -25;-25 30]);
 
+modelfunLinear = @(b,x) b(1)*x + b(2);
+modelfunLinearTLS = @(b,x) b(1)*x(:,1) + b(2) -x(:,2);
+
+% ordinary least squares
+x = xpts';
+y = ypts';
+betacoefOrdinary = lsr(x,y,modelfunLinear);
+% total least squares
+x = [xpts' ypts'];
+y = zeros(5,1);
+beteacoef0 = betacoefOrdinary;
+betacoefTLS = lsr(x,y,modelfunLinearTLS,beteacoef0,'type','tls','Weights',covxy);
+
+% plot
+f5 = figure(5);clf;hold on;
+xi = 0:100;
+plot(xpts,ypts,'k.','markersize',25);
+plot(xi,modelfunLinear(betacoefOrdinary,xi),'b-','linewidth',2);
+plot(xi,modelfunLinear(betacoefTLS,xi),'r-','linewidth',2);
+legend({'Raw Data','Ordinary Least Squares',...
+    'Total Least Squares'},...
+    'interpreter','latex','fontsize',14,'location','best')
 %% Robust Least Squares for Line with outliers
+% data has one outlier (8,12)
+x = [1 2 3 4 5 6 7 8 9 10 8 9]';
+y = [1.2 2 3.1 4 5.3 6 7.4 8 9.5 10 2 3]';
+modelfunLinear = @(b,x) b(1)*x + b(2);
+
+% Ordinary Least Squares
+betacoefOrdinary = lsr(x,y,modelfunLinear,'verbose',true);
+
+% Robust Least Squares
+betacoefRobust = lsr(x,y,modelfunLinear,'RobustWgtFun','andrews','verbose',true);
+
+%plot
+f6 = figure(6);clf;hold on;
+plot(x(1:10),y(1:10),'k.','markersize',25);
+plot(x(11:12),y(11:12),'mo','MarkerFaceColor','k','linewidth',2,'markersize',10);
+plot(x,modelfunLinear(betacoefOrdinary,x),'b-','linewidth',2);
+plot(x,modelfunLinear(betacoefRobust,x),'r-','linewidth',2);
+legend({'Raw Data(inliers)','Raw Data(outliers)','Ordinary Least Squares',...
+    'Robust Least Squares (Andrews)'},...
+    'interpreter','latex','fontsize',14,'location','best')
 
 %% Plot/Report Some Data from Outputs (demonstrate Residuals, covariance, etc)
 
 %% Chi2 Test for linear line, Dont Scale Covariance
-% noscale, chi2alpha
+
+% generate data
+rng(2)
+stdy = 5;
+x = (0:1:50)';
+modelfunLinear = @(b,x) b(1)*x + b(2);
+truebeta = [1 2];
+y = modelfunLinear(truebeta,x)+randn(size(x))*stdy;
+CovarianceMatrix = diag(ones(size(x)))*stdy.^2;
+
+% Linear With Covariance Scaled Correctly
+[betacoefA,~,~,CovB_A,MSEA,ErrorModelInfoA] = lsr(x,y,modelfunLinear,'Weights',CovarianceMatrix);
+% Linear With Covariance Scaled High (Overestimating Errors)
+[betacoefB,~,~,CovB_B,MSEB,ErrorModelInfoB] = lsr(x,y,modelfunLinear,'Weights',CovarianceMatrix*5);
+% Linear With Covariance Scaled Low (UnderEstimating Errors)
+[betacoefC,~,~,CovB_C,MSEC,ErrorModelInfoC] = lsr(x,y,modelfunLinear,'Weights',CovarianceMatrix/5);
+% Linear With Covariance Scaled Correctly and CovB Not Scaled
+[betacoefD,~,~,CovB_D,MSED,ErrorModelInfoD] = lsr(x,y,modelfunLinear,'Weights',CovarianceMatrix,'scalecov',false);
+% Test with fixed chi2alpha
+[betacoefE,~,~,CovB_E,MSEE,ErrorModelInfoE] = lsr(x,y,modelfunLinear,'Weights',CovarianceMatrix,'chi2alpha',0.10);
+
+% Print Results
+fprintf('%s\n\tCovariance Chi2 Test\n%s\n',repmat('x',1,40),repmat('x',1,40));
+fprintf('%20s | %15s | %15s | %10s | %10s | %10s | %10s\n','Type',...
+    'BetaCoef(1)','BetaCoef(2)','So2','So2Low','So2High','Chi2 Test');
+fprintf('%20s | %15s | %15s | %10f | %10f | %10f | %10s\n','Correct Scale',...
+    sprintf('%.3f %s %.3f',betacoefA(1),177,sqrt(CovB_A(1,1))),...
+    sprintf('%.3f %s %.3f',betacoefA(2),177,sqrt(CovB_A(2,2))),...
+    MSEA,ErrorModelInfoA.chi2.So2low,ErrorModelInfoA.chi2.So2high,'PASS @ 5%')
+fprintf('%20s | %15s | %15s | %10f | %10f | %10f | %10s\n','Correct Scale',...
+    sprintf('%.3f %s %.3f',betacoefB(1),177,sqrt(CovB_B(1,1))),...
+    sprintf('%.3f %s %.3f',betacoefB(2),177,sqrt(CovB_B(2,2))),...
+    MSEB,ErrorModelInfoB.chi2.So2low,ErrorModelInfoB.chi2.So2high,'FAIL @ 5%')
+fprintf('%20s | %15s | %15s | %10f | %10f | %10f | %10s\n','Correct Scale',...
+    sprintf('%.3f %s %.3f',betacoefC(1),177,sqrt(CovB_C(1,1))),...
+    sprintf('%.3f %s %.3f',betacoefC(2),177,sqrt(CovB_C(2,2))),...
+    MSEC,ErrorModelInfoC.chi2.So2low,ErrorModelInfoC.chi2.So2high,'FAIL @ 5%')
+fprintf('%20s | %15s | %15s | %10f | %10f | %10f | %10s\n','Correct Scale',...
+    sprintf('%.3f %s %.3f',betacoefD(1),177,sqrt(CovB_D(1,1))),...
+    sprintf('%.3f %s %.3f',betacoefD(2),177,sqrt(CovB_D(2,2))),...
+    MSED,ErrorModelInfoD.chi2.So2low,ErrorModelInfoD.chi2.So2high,'PASS @ 5%')
+fprintf('%20s | %15s | %15s | %10f | %10f | %10f | %10s\n','Correct Scale',...
+    sprintf('%.3f %s %.3f',betacoefE(1),177,sqrt(CovB_E(1,1))),...
+    sprintf('%.3f %s %.3f',betacoefE(2),177,sqrt(CovB_E(2,2))),...
+    MSEE,ErrorModelInfoE.chi2.So2low,ErrorModelInfoE.chi2.So2high,'PASS @ 10%')
+% Notice that the betacoef doesnt change, only the scale of the error
+% estimates in CovB and the chi2 test limits when alpha is changed
 
 %% Analytical Jacobian and Bfunction
 

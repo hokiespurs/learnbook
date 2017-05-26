@@ -222,6 +222,9 @@ if isinputcovariance
     ErrorModelInfo.chi2.calculatedchi2 = chi2;
     ErrorModelInfo.chi2.chi2low        = chi2low;
     ErrorModelInfo.chi2.chi2high       = chi2high;
+    ErrorModelInfo.chi2.calculatedSo2  = chi2/ndof;
+    ErrorModelInfo.chi2.So2low         = chi2low/ndof;
+    ErrorModelInfo.chi2.So2high        = chi2high/ndof;
     if isverbose
         fprintf('\n\tCHI^2 GOODNESS OF FIT TEST (Significance=%.2f, dof=%.0f, So2=%.3f)\n',chi2alpha,ndof,MSE);
         fprintf('\t  Ho %.3f == 1\n',MSE);
