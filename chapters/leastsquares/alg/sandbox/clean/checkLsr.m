@@ -63,10 +63,10 @@ x = [0 1 2 3 4]';
 y = [5 1 7 13 24]';
 modelfun = @(b,x) b(1)*exp(b(2)*x);
 beta0 = [1 1]';
-[betacoef,R,~,CovB,MSE,~] = lsr(x,y,modelfun,beta0);
+[betacoef,R,~,CovB,MSE,ErrorModelInfo2] = lsr(x,y,modelfun,beta0);
 
 %computed values using matlab
-[betacoef2,R2,~,CovB2,MSE2,~] = nlinfit(x,y,modelfun,beta0);
+[betacoef2,R2,~,CovB2,MSE2,ErrorModelInfo] = nlinfit(x,y,modelfun,beta0);
 %check to make sure function is working correctly
 checkVals(betacoef,betacoef2,THRESHNLIN);
 checkVals(R,R2,THRESHNLIN);

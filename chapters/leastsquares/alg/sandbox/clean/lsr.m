@@ -239,7 +239,9 @@ if isinputcovariance
         end
     end
 end
-
+%% Compute Total Propagated Uncertainty Function (GLOPOV)
+ErrorModelInfo.TPUfun = @(x) JybFunction(betacoef,x)*CovB*JybFunction(betacoef,x)';
+ErrorModelInfo.yvalfun = @(x) modelfun(betacoef,x);
 end
 
 function printPreSummary(lstype,p,nBetacoef)

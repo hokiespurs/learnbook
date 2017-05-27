@@ -221,6 +221,8 @@ legend({'Raw Data(inliers)','Raw Data(outliers)','Ordinary Least Squares',...
 
 %% Plot/Report Some Data from Outputs (demonstrate Residuals, covariance, etc)
 
+%% Do TPU with function handles
+
 %% Chi2 Test for linear line, Dont Scale Covariance
 
 % generate data
