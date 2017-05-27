@@ -202,6 +202,7 @@ end
 %% Compute Least Squares
 [betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsrfun(x,y);
 ErrorModelInfo.parser = p; % include function input in metadata output
+CovB = enforceCovariance(CovB);
 
 %% Do Chi2 Test if covariance and linear/nonlinear
 if isinputcovariance  
@@ -240,7 +241,12 @@ if isinputcovariance
     end
 end
 %% Compute Total Propagated Uncertainty Function (GLOPOV)
-ErrorModelInfo.TPUfun = @(x) JybFunction(betacoef,x)*CovB*JybFunction(betacoef,x)';
+ErrorModelInfo.TPUfun = @(x) calcErrorProp(modelfun,x,...
+    sparse(zeros(1,numel(x))),betacoef,CovB,...
+    'JacobianYB',JybFunction,'JacobianYX',JyxFunction);
+ErrorModelInfo.TPUfunCovX = @(x,Sxx) calcErrorProp(modelfun,x,...
+    Sxx,betacoef,CovB,'JacobianYB',JybFunction,'JacobianYX',JyxFunction);
+
 ErrorModelInfo.yvalfun = @(x) modelfun(betacoef,x);
 end
 
@@ -778,6 +784,50 @@ else
 end
 end
 
+%% Enforce Covariance Matrix Validity
+function Y=enforceCovariance(X)
+count = 0;
+while count<100 && (~issymmetric(X) || ~calcIsPSD(X))
+% make sure positive semi definite
+X = enforcePositiveDefinite(X);
+% make sure symmetric
+X = enforceSymmetric(X);
+count = count+1;
+end
+if count == 100
+   warning('Couldnt make covariance matrix valid'); 
+end
+Y = X;
+end
+
+function Y = enforceSymmetric(X)
+Y=X;
+for i=1:size(X,1)
+   for j = 1:size(X,1)
+      Y(j,i)= (X(i,j)+X(j,i))/2;
+      Y(i,j)= Y(j,i);
+   end
+end
+end
+
+function isPSD = calcIsPSD(C)
+[~,D]=eig(C);
+
+eigenvals = diag(D);
+
+isPSD = ~sum(eigenvals<0)>0;
+end
+
+function Y = enforcePositiveDefinite(X)
+[V,D]=eig(X);
+
+d=diag(D);
+d(d<=0)=eps;
+
+Y= V*diag(d)*V';
+
+end
+
 function [robustTune, robustWgtFun, isvalid] = getRobust(weightfun, tune)
 %% the weightfunction can be either a string of a function
 % determine which and make sure its valid
@@ -945,8 +995,6 @@ for i=1:nVariables
 end
 
 end
-
-
 
 function K = calcK(modelfun,betacoef,x,y)
 % calculate the K matrix for each iteration

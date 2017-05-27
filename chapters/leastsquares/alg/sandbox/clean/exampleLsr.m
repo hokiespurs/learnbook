@@ -222,6 +222,34 @@ legend({'Raw Data(inliers)','Raw Data(outliers)','Ordinary Least Squares',...
 %% Plot/Report Some Data from Outputs (demonstrate Residuals, covariance, etc)
 
 %% Do TPU with function handles
+% Compute a Rotation Matrix using data, then use CovB to propagate error
+modelConformal = @(b,x) conformal3dfun(b(1),b(2),b(3),b(4),b(5),b(6),b(7),x);
+
+%generate data
+rng(1);
+xpts = (rand(10,1)-0.5)*100;
+ypts = (rand(10,1)-0.5)*100;
+zpts = (rand(10,1)-0.5)*100;
+x = [xpts ypts zpts];
+
+truebeta = [1 pi/2 pi pi/4 2 3 4]';
+XYZ = modelConformal(truebeta,x) + randn(3*numel(xpts),1);
+Xpts = XYZ(1:3:end);
+Ypts = XYZ(2:3:end);
+Zpts = XYZ(3:3:end);
+
+% do least squares
+y = [Xpts Ypts Zpts]';
+y = y(:);
+betacoef0 = truebeta;
+
+[betacoef,R,J,CovB,MSE,ErrorModelInfo] = lsr(x,y,modelConformal,...
+    betacoef0,'verbose',true);
+% propagate error for a new point
+xyz = [10 20 30];
+Sxx = [0.5 0.3 0;0.3 0.5 0;0 0 0.4];
+Syy = ErrorModelInfo.TPUfun(xyz);
+SyyCovxyz = ErrorModelInfo.TPUfunCovX(xyz,Sxx);
 
 %% Chi2 Test for linear line, Dont Scale Covariance
 

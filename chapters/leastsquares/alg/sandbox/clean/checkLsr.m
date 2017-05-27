@@ -166,6 +166,8 @@ RMSE = sqrt(Veq'*Veq/m);          % RMSE
 betacoef_manual = X;
 
 checkVals(betacoef_manual,betacoef,1e-8);
+%%
+fprintf('All Tests Passed\n');
 
 end
 function checkVals(x,y,thresh)
