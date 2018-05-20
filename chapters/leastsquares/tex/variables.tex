@@ -32,8 +32,8 @@ Test Statistic:
 \]
 Rejection Region:
 \begin{align*}
-\chi^2 &> \chi_{(\alpha/2,dof)}^2 \\
-\chi^2 &< \chi_{(1-\alpha/2,dof)}^2 \\
+\chi^2 &> \chi_{(\alpha/2,dof)}^2 \text{ Indicates errors are LARGER than expected}\\
+\chi^2 &< \chi_{(1-\alpha/2,dof)}^2 \text{ Indicates errors are SMALLER than expected\\
 \end{align*}
 If either of the rejection region tests fail at the alpha level, then the null hypothesis is rejected and we can say that the computed reference variance is not equal to the a priori reference variance of 1 at an $\alpha$ significance level.  \textbf{More importantly}, and somewhat counter-intuitively, is that if both rejection region tests pass, we say that the computed reference variance is not significantly different than the a priori reference variance at an $alpha$ significance level, so \textbf{we set the computed reference variance equal to 1!}  What we are saying here is that the computed reference variance is just an estimate, and it should be equal to 1.  Since that estimate is not statistically different than 1 (which would indicate a blunder or poor stochastic model), we assume that there are no blunders and our stochastic model is correct.  If there are no blunders and our stochastic model is correct, the computed reference variance is equal to 1.
 \subsubsection*{Cofactor Matrix ($Q$)}
