@@ -167,26 +167,26 @@ An example weight matrix for 4 observations equations (a,b,c,d) is shown below f
 \begin{align*}
 \text{Weighted Least Squares(WLS) } W = \Sigma^{-1} &= 
 \begin{bmatrix}
-\sigma_{aa}^2 & 0 & 0 & 0 \\ 
-0 & \sigma_{bb}^2 & 0 & 0 \\
-0 & 0 & \sigma_{cc}^2 & 0 \\
-0 & 0 & 0 & \sigma_{dd}^2 \\
+\sigma_{a}^2 & 0 & 0 & 0 \\ 
+0 & \sigma_{b}^2 & 0 & 0 \\
+0 & 0 & \sigma_{c}^2 & 0 \\
+0 & 0 & 0 & \sigma_{d}^2 \\
 \end{bmatrix}
 ^{-1}
 =
 \begin{bmatrix}
-\dfrac{1}{\sigma_{aa}^2} & 0 & 0 & 0 \\ 
-0 & \dfrac{1}{\sigma_{bb}^2} & 0 & 0 \\
-0 & 0 & \dfrac{1}{\sigma_{cc}^2} & 0 \\
-0 & 0 & 0 & \dfrac{1}{\sigma_{dd}^2} \\
+\dfrac{1}{\sigma_{a}^2} & 0 & 0 & 0 \\ 
+0 & \dfrac{1}{\sigma_{b}^2} & 0 & 0 \\
+0 & 0 & \dfrac{1}{\sigma_{c}^2} & 0 \\
+0 & 0 & 0 & \dfrac{1}{\sigma_{d}^2} \\
 \end{bmatrix}
 \\
 \text{General Least Squares(GLS) } W = \Sigma^{-1} &= 
 \begin{bmatrix}
-\sigma_{aa}^2 & \sigma_{ab}^2 & \sigma_{ac}^2 & \sigma_{ad}^2 \\ 
-\sigma_{ab}^2 & \sigma_{bb}^2 & \sigma_{bc}^2 & \sigma_{bd}^2 \\ 
-\sigma_{ac}^2 & \sigma_{bc}^2 & \sigma_{cc}^2 & \sigma_{cd}^2 \\ 
-\sigma_{ad}^2 & \sigma_{bd}^2 & \sigma_{cd}^2 & \sigma_{dd}^2 \\ 
+\sigma_{a}^2 & \sigma_{ab} & \sigma_{ac} & \sigma_{ad} \\ 
+\sigma_{ab} & \sigma_{b}^2 & \sigma_{bc} & \sigma_{bd} \\ 
+\sigma_{ac} & \sigma_{bc} & \sigma_{c}^2 & \sigma_{cd} \\ 
+\sigma_{ad} & \sigma_{bd} & \sigma_{cd} & \sigma_{d}^2 \\ 
 \end{bmatrix}
 ^{-1}
 \end{align*}
@@ -307,14 +307,14 @@ With an optional Covariance Matrix for all of the observations equal to:
 \[
 \Sigma = 
 \begin{bmatrix}
-\sigma_{x_Ax_A}^2 & \sigma_{x_Ay_A}^2 & \sigma_{x_Ax_B}^2 & \sigma_{x_Ay_B}^2 & \sigma_{x_Ax_C}^2 & \sigma_{x_Ay_C}^2 & \sigma_{x_Ax_D}^2 & \sigma_{x_Ay_D}^2 &  \\ 
-\sigma_{x_Ay_A}^2 & \sigma_{y_Ay_A}^2 & \sigma_{y_Ax_B}^2 & \sigma_{y_Ay_B}^2 & \sigma_{y_Ax_C}^2 & \sigma_{y_Ay_C}^2 & \sigma_{y_Ax_D}^2 & \sigma_{y_Ay_D}^2 &  \\ 
-\sigma_{x_Ax_B}^2 & \sigma_{y_Ax_B}^2 & \sigma_{x_Bx_B}^2 & \sigma_{x_By_B}^2 & \sigma_{x_Bx_C}^2 & \sigma_{x_By_C}^2 & \sigma_{x_Bx_D}^2 & \sigma_{x_By_D}^2 &  \\ 
-\sigma_{x_Ay_B}^2 & \sigma_{y_Ay_B}^2 & \sigma_{x_By_B}^2 & \sigma_{y_By_B}^2 & \sigma_{y_Bx_C}^2 & \sigma_{y_By_C}^2 & \sigma_{y_Bx_D}^2 & \sigma_{y_By_D}^2 &  \\ 
-\sigma_{x_Ax_C}^2 & \sigma_{y_Ax_C}^2 & \sigma_{x_Bx_C}^2 & \sigma_{y_Bx_C}^2 & \sigma_{x_Cx_C}^2 & \sigma_{x_Cy_C}^2 & \sigma_{x_Cx_D}^2 & \sigma_{x_Cy_D}^2 &  \\ 
-\sigma_{x_Ay_C}^2 & \sigma_{y_Ay_C}^2 & \sigma_{x_By_C}^2 & \sigma_{y_By_C}^2 & \sigma_{x_Cy_C}^2 & \sigma_{y_Cy_C}^2 & \sigma_{y_Cx_D}^2 & \sigma_{y_Cy_D}^2 &  \\ 
-\sigma_{x_Ax_D}^2 & \sigma_{y_Ax_D}^2 & \sigma_{x_Bx_D}^2 & \sigma_{y_Bx_D}^2 & \sigma_{x_Cx_D}^2 & \sigma_{y_Cx_D}^2 & \sigma_{x_Dx_D}^2 & \sigma_{x_Dy_D}^2 &  \\ 
-\sigma_{x_Ay_D}^2 & \sigma_{y_Ay_D}^2 & \sigma_{x_By_D}^2 & \sigma_{y_By_D}^2 & \sigma_{x_Cy_D}^2 & \sigma_{y_Cy_D}^2 & \sigma_{x_Dy_D}^2 & \sigma_{y_Dy_D}^2 &  \\ 
+\sigma_{x_A}^2 & \sigma_{x_Ay_A} & \sigma_{x_Ax_B} & \sigma_{x_Ay_B} & \sigma_{x_Ax_C} & \sigma_{x_Ay_C} & \sigma_{x_Ax_D} & \sigma_{x_Ay_D} &  \\ 
+\sigma_{x_Ay_A} & \sigma_{y_A}^2 & \sigma_{y_Ax_B} & \sigma_{y_Ay_B} & \sigma_{y_Ax_C} & \sigma_{y_Ay_C} & \sigma_{y_Ax_D} & \sigma_{y_Ay_D} &  \\ 
+\sigma_{x_Ax_B} & \sigma_{y_Ax_B} & \sigma_{x_B}^2 & \sigma_{x_By_B} & \sigma_{x_Bx_C} & \sigma_{x_By_C} & \sigma_{x_Bx_D} & \sigma_{x_By_D} &  \\ 
+\sigma_{x_Ay_B} & \sigma_{y_Ay_B} & \sigma_{x_By_B} & \sigma_{y_B}^2 & \sigma_{y_Bx_C} & \sigma_{y_By_C} & \sigma_{y_Bx_D} & \sigma_{y_By_D} &  \\ 
+\sigma_{x_Ax_C} & \sigma_{y_Ax_C} & \sigma_{x_Bx_C} & \sigma_{y_Bx_C} & \sigma_{x_C}^2 & \sigma_{x_Cy_C} & \sigma_{x_Cx_D} & \sigma_{x_Cy_D} &  \\ 
+\sigma_{x_Ay_C} & \sigma_{y_Ay_C} & \sigma_{x_By_C} & \sigma_{y_By_C} & \sigma_{x_Cy_C} & \sigma_{y_C}^2 & \sigma_{y_Cx_D} & \sigma_{y_Cy_D} &  \\ 
+\sigma_{x_Ax_D} & \sigma_{y_Ax_D} & \sigma_{x_Bx_D} & \sigma_{y_Bx_D} & \sigma_{x_Cx_D} & \sigma_{y_Cx_D} & \sigma_{x_D}^2 & \sigma_{x_Dy_D} &  \\ 
+\sigma_{x_Ay_D} & \sigma_{y_Ay_D} & \sigma_{x_By_D} & \sigma_{y_By_D} & \sigma_{x_Cy_D} & \sigma_{y_Cy_D} & \sigma_{x_Dy_D} & \sigma_{y_D}^2 &  \\ 
 \end{bmatrix}
 \]
 

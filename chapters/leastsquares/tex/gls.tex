@@ -70,7 +70,7 @@ W =
 \clearpage
 
 \subsection{Sample Problem}
-\todo{fix variance covariance EVERYWHERE so only variances are squared... pg88 ghilani}
+
 Given the control coordinates $(x_c,y_c)$, corresponding measured coordinates $(x,y)$, and estimated covariance matrix of the control coordinates $\Sigma_c$: 
 \[
 x_c = [1,2,3] \hspace{1cm} y_c = [0, 5, 1]  \hspace{1cm} x = [6,1,8] \hspace{1cm} y = [3,12,8]
@@ -78,12 +78,12 @@ x_c = [1,2,3] \hspace{1cm} y_c = [0, 5, 1]  \hspace{1cm} x = [6,1,8] \hspace{1cm
 \[
 \Sigma_c = 
  \begin{bmatrix}
-\sigma_{x_{c_1}x_{c_1}}^2 & \sigma_{x_{c_1}y_{c_1}}^2 & \sigma_{x_{c_1}x_{c_2}}^2 & \sigma_{x_{c_1}y_{c_2}}^2 & \sigma_{x_{c_1}x_{c_3}}^2 & \sigma_{x_{c_1}y_{c_3}}^2  \\ 
-\sigma_{x_{c_1}y_{c_1}}^2 & \sigma_{y_{c_1}y_{c_1}}^2 & \sigma_{y_{c_1}x_{c_2}}^2 & \sigma_{y_{c_1}y_{c_2}}^2 & \sigma_{y_{c_1}x_{c_3}}^2 & \sigma_{y_{c_1}y_{c_3}}^2  \\ 
-\sigma_{x_{c_1}x_{c_2}}^2 & \sigma_{y_{c_1}x_{c_2}}^2 & \sigma_{x_{c_2}x_{c_2}}^2 & \sigma_{x_{c_2}y_{c_2}}^2 & \sigma_{x_{c_2}x_{c_3}}^2 & \sigma_{x_{c_2}y_{c_3}}^2  \\ 
-\sigma_{x_{c_1}y_{c_2}}^2 & \sigma_{y_{c_1}y_{c_2}}^2 & \sigma_{x_{c_2}y_{c_2}}^2 & \sigma_{y_{c_2}y_{c_2}}^2 & \sigma_{y_{c_2}x_{c_3}}^2 & \sigma_{y_{c_2}y_{c_3}}^2  \\ 
-\sigma_{x_{c_1}x_{c_3}}^2 & \sigma_{y_{c_1}x_{c_3}}^2 & \sigma_{x_{c_2}x_{c_3}}^2 & \sigma_{y_{c_2}x_{c_3}}^2 & \sigma_{x_{c_3}x_{c_3}}^2 & \sigma_{x_{c_3}y_{c_3}}^2  \\ 
-\sigma_{x_{c_1}y_{c_3}}^2 & \sigma_{y_{c_1}y_{c_3}}^2 & \sigma_{x_{c_2}y_{c_3}}^2 & \sigma_{y_{c_2}y_{c_3}}^2 & \sigma_{x_{c_3}y_{c_3}}^2 & \sigma_{y_{c_3}y_{c_3}}^2  \\ 
+\sigma_{x_{c_1}x_{c_1}}^2 & \sigma_{x_{c_1}y_{c_1}} & \sigma_{x_{c_1}x_{c_2}} & \sigma_{x_{c_1}y_{c_2}} & \sigma_{x_{c_1}x_{c_3}} & \sigma_{x_{c_1}y_{c_3}}  \\ 
+\sigma_{x_{c_1}y_{c_1}} & \sigma_{y_{c_1}}^2 & \sigma_{y_{c_1}x_{c_2}} & \sigma_{y_{c_1}y_{c_2}} & \sigma_{y_{c_1}x_{c_3}} & \sigma_{y_{c_1}y_{c_3}}  \\ 
+\sigma_{x_{c_1}x_{c_2}} & \sigma_{y_{c_1}x_{c_2}} & \sigma_{x_{c_2}}^2 & \sigma_{x_{c_2}y_{c_2}} & \sigma_{x_{c_2}x_{c_3}} & \sigma_{x_{c_2}y_{c_3}}  \\ 
+\sigma_{x_{c_1}y_{c_2}} & \sigma_{y_{c_1}y_{c_2}} & \sigma_{x_{c_2}y_{c_2}} & \sigma_{y_{c_2}}^2 & \sigma_{y_{c_2}x_{c_3}} & \sigma_{y_{c_2}y_{c_3}}  \\ 
+\sigma_{x_{c_1}x_{c_3}} & \sigma_{y_{c_1}x_{c_3}} & \sigma_{x_{c_2}x_{c_3}} & \sigma_{y_{c_2}x_{c_3}} & \sigma_{x_{c_3}}^2 & \sigma_{x_{c_3}y_{c_3}}  \\ 
+\sigma_{x_{c_1}y_{c_3}} & \sigma_{y_{c_1}y_{c_3}} & \sigma_{x_{c_2}y_{c_3}} & \sigma_{y_{c_2}y_{c_3}} & \sigma_{x_{c_3}y_{c_3}} & \sigma_{y_{c_3}}^2  \\ 
  \end{bmatrix}
  = 
  \begin{bmatrix}
@@ -97,7 +97,7 @@ x_c = [1,2,3] \hspace{1cm} y_c = [0, 5, 1]  \hspace{1cm} x = [6,1,8] \hspace{1cm
 \]
 
 Calculate the 2D Conformal (Four Parameter Similarity Transform) to go from the measured coordinates to the control coordinates.  (Note that the block diagonal structure of this covariance matrix describes that the x and y coordinate are correlated to each other for each point, but there is no correlation between points).  The 2D Conformal equations are:
-\todo{equation is wrong!}
+
 \begin{align*}
 x_c &= (S\cos(\theta))x - (S\sin(\theta))y + T_x \\
 y_c &= (S\sin(\theta))x + (S\cos(\theta))y + T_y \\

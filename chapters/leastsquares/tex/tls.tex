@@ -94,10 +94,10 @@ l_1 - F_1(X_i) \\ l_2 - F_2(X_i)\\ \vdots \\ l_m - F_m(X_i)
 \[
 \Sigma = 
 \begin{bmatrix}
-\sigma_{11}^2 & \sigma_{12}^2 & \dots & \sigma_{1(n\times m)}^2 \\ 
-\sigma_{21}^2 & \sigma_{22}^2 & \dots & \sigma_{2(n\times m)}^2 \\ 
+\sigma_{1}^2 & \sigma_{12} & \dots & \sigma_{(1\times n)} \\ 
+\sigma_{21} & \sigma_{2}^2 & \dots & \sigma_{(2\times n)} \\ 
 \vdots & \vdots & \ddots& \vdots \\
-\sigma_{(n\times m)1}^2 & \sigma_{(n\times m)2}^2 & \dots & \sigma_{(n\times m)(n\times m)}^2 \\ 
+\sigma_{(n\times 1)} & \sigma_{(n\times 2)}^2 & \dots & \sigma_{n}^2 \\ 
 \end{bmatrix}
 \hspace{1cm}
 \text{Initial Guess } X_0 = 
@@ -136,16 +136,16 @@ x = [10,20,60,40,85] \hspace{1cm} y = [0,15,23,25,40]
 \[
 \Sigma = 
 \begin{bmatrix}
-\sigma_{x_1x_1}^2 & \sigma_{x_1y_1}^2 & \sigma_{x_1x_2}^2 & \sigma_{x_1y_2}^2 & \sigma_{x_1x_3}^2 & \sigma_{x_1y_3}^2 & \sigma_{x_1x_4}^2 & \sigma_{x_1y_4}^2 & \sigma_{x_1x_5}^2 & \sigma_{x_1y_5}^2  \\ 
-\sigma_{x_1y_1}^2 & \sigma_{y_1y_1}^2 & \sigma_{y_1x_2}^2 & \sigma_{y_1y_2}^2 & \sigma_{y_1x_3}^2 & \sigma_{y_1y_3}^2 & \sigma_{y_1x_4}^2 & \sigma_{y_1y_4}^2 & \sigma_{y_1x_5}^2 & \sigma_{y_1y_5}^2  \\ 
-\sigma_{x_1x_2}^2 & \sigma_{y_1x_2}^2 & \sigma_{x_2x_2}^2 & \sigma_{x_2y_2}^2 & \sigma_{x_2x_3}^2 & \sigma_{x_2y_3}^2 & \sigma_{x_2x_4}^2 & \sigma_{x_2y_4}^2 & \sigma_{x_2x_5}^2 & \sigma_{x_2y_5}^2  \\ 
-\sigma_{x_1y_2}^2 & \sigma_{y_1y_2}^2 & \sigma_{x_2y_2}^2 & \sigma_{y_2y_2}^2 & \sigma_{y_2x_3}^2 & \sigma_{y_2y_3}^2 & \sigma_{y_2x_4}^2 & \sigma_{y_2y_4}^2 & \sigma_{y_2x_5}^2 & \sigma_{y_2y_5}^2  \\ 
-\sigma_{x_1x_3}^2 & \sigma_{y_1x_3}^2 & \sigma_{x_2x_3}^2 & \sigma_{y_2x_3}^2 & \sigma_{x_3x_3}^2 & \sigma_{x_3y_3}^2 & \sigma_{x_3x_4}^2 & \sigma_{x_3y_4}^2 & \sigma_{x_3x_5}^2 & \sigma_{x_3y_5}^2  \\ 
-\sigma_{x_1y_3}^2 & \sigma_{y_1y_3}^2 & \sigma_{x_2y_3}^2 & \sigma_{y_2y_3}^2 & \sigma_{x_3y_3}^2 & \sigma_{y_3y_3}^2 & \sigma_{y_3x_4}^2 & \sigma_{y_3y_4}^2 & \sigma_{y_3x_5}^2 & \sigma_{y_3y_5}^2  \\ 
-\sigma_{x_1x_4}^2 & \sigma_{y_1x_4}^2 & \sigma_{x_2x_4}^2 & \sigma_{y_2x_4}^2 & \sigma_{x_3x_4}^2 & \sigma_{y_3x_4}^2 & \sigma_{x_4x_4}^2 & \sigma_{x_4y_4}^2 & \sigma_{x_4x_5}^2 & \sigma_{x_4y_5}^2  \\ 
-\sigma_{x_1y_4}^2 & \sigma_{y_1y_4}^2 & \sigma_{x_2y_4}^2 & \sigma_{y_2y_4}^2 & \sigma_{x_3y_4}^2 & \sigma_{y_3y_4}^2 & \sigma_{x_4y_4}^2 & \sigma_{y_4y_4}^2 & \sigma_{y_4x_5}^2 & \sigma_{y_4y_5}^2  \\ 
-\sigma_{x_1x_5}^2 & \sigma_{y_1x_5}^2 & \sigma_{x_2x_5}^2 & \sigma_{y_2x_5}^2 & \sigma_{x_3x_5}^2 & \sigma_{y_3x_5}^2 & \sigma_{x_4x_5}^2 & \sigma_{y_4x_5}^2 & \sigma_{x_5x_5}^2 & \sigma_{x_5y_5}^2  \\ 
-\sigma_{x_1y_5}^2 & \sigma_{y_1y_5}^2 & \sigma_{x_2y_5}^2 & \sigma_{y_2y_5}^2 & \sigma_{x_3y_5}^2 & \sigma_{y_3y_5}^2 & \sigma_{x_4y_5}^2 & \sigma_{y_4y_5}^2 & \sigma_{x_5y_5}^2 & \sigma_{y_5y_5}^2  \\ 
+\sigma_{x_1}^2 & \sigma_{x_1y_1} & \sigma_{x_1x_2} & \sigma_{x_1y_2} & \sigma_{x_1x_3} & \sigma_{x_1y_3} & \sigma_{x_1x_4} & \sigma_{x_1y_4} & \sigma_{x_1x_5} & \sigma_{x_1y_5} \\
+\sigma_{y_1x_1} & \sigma_{y_1}^2 & \sigma_{y_1x_2} & \sigma_{y_1y_2} & \sigma_{y_1x_3} & \sigma_{y_1y_3} & \sigma_{y_1x_4} & \sigma_{y_1y_4} & \sigma_{y_1x_5} & \sigma_{y_1y_5} \\
+\sigma_{x_2x_1} & \sigma_{x_2y_1} & \sigma_{x_2}^2 & \sigma_{x_2y_2} & \sigma_{x_2x_3} & \sigma_{x_2y_3} & \sigma_{x_2x_4} & \sigma_{x_2y_4} & \sigma_{x_2x_5} & \sigma_{x_2y_5} \\
+\sigma_{y_2x_1} & \sigma_{y_2y_1} & \sigma_{y_2x_2} & \sigma_{y_2}^2 & \sigma_{y_2x_3} & \sigma_{y_2y_3} & \sigma_{y_2x_4} & \sigma_{y_2y_4} & \sigma_{y_2x_5} & \sigma_{y_2y_5} \\
+\sigma_{x_3x_1} & \sigma_{x_3y_1} & \sigma_{x_3x_2} & \sigma_{x_3y_2} & \sigma_{x_3}^2 & \sigma_{x_3y_3} & \sigma_{x_3x_4} & \sigma_{x_3y_4} & \sigma_{x_3x_5} & \sigma_{x_3y_5} \\
+\sigma_{y_3x_1} & \sigma_{y_3y_1} & \sigma_{y_3x_2} & \sigma_{y_3y_2} & \sigma_{y_3x_3} & \sigma_{y_3}^2 & \sigma_{y_3x_4} & \sigma_{y_3y_4} & \sigma_{y_3x_5} & \sigma_{y_3y_5} \\
+\sigma_{x_4x_1} & \sigma_{x_4y_1} & \sigma_{x_4x_2} & \sigma_{x_4y_2} & \sigma_{x_4x_3} & \sigma_{x_4y_3} & \sigma_{x_4}^2 & \sigma_{x_4y_4} & \sigma_{x_4x_5} & \sigma_{x_4y_5} \\
+\sigma_{y_4x_1} & \sigma_{y_4y_1} & \sigma_{y_4x_2} & \sigma_{y_4y_2} & \sigma_{y_4x_3} & \sigma_{y_4y_3} & \sigma_{y_4x_4} & \sigma_{y_4}^2 & \sigma_{y_4x_5} & \sigma_{y_4y_5} \\
+\sigma_{x_5x_1} & \sigma_{x_5y_1} & \sigma_{x_5x_2} & \sigma_{x_5y_2} & \sigma_{x_5x_3} & \sigma_{x_5y_3} & \sigma_{x_5x_4} & \sigma_{x_5y_4} & \sigma_{x_5}^2 & \sigma_{x_5y_5} \\
+\sigma_{y_5x_1} & \sigma_{y_5y_1} & \sigma_{y_5x_2} & \sigma_{y_5y_2} & \sigma_{y_5x_3} & \sigma_{y_5y_3} & \sigma_{y_5x_4} & \sigma_{y_5y_4} & \sigma_{y_5x_5} & \sigma_{y_5}^2 \\
 \end{bmatrix}
 \]
 \[
